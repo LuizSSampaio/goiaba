@@ -1,0 +1,11 @@
+
+# Properly detect languages on Github
+*.h linguist-language=C++
+*.inc linguist-language=C++
+subprojects/* linguist-vendored
+
+# The above only works properly for Git 2.10+, so for older versions
+# we need to manually list the binary files we don't want modified.
+*.ico binary
+*.png binary
+*.ttf binary
