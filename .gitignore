@@ -1,0 +1,10 @@
+# Environment
+.direnv/
+
+# Build
+.cache/
+build/
+
+# Documentation
+docs/_build/
+docs/xml/
