@@ -4,6 +4,8 @@
 # Build
 .cache/
 build/
+subprojects/**/
+!subprojects/*.wrap
 
 # Documentation
 docs/_build/
