@@ -14,6 +14,9 @@ brun: build run
 setup:
     meson setup {{ builddir }}
 
+test:
+    meson test -C {{ builddir }}
+
 clear:
     rm -rf ./{{ builddir }}
 
