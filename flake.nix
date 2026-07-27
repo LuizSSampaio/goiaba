@@ -47,6 +47,10 @@
 
             # HID / USB (for SDL_HIDAPI_LIBUSB)
             libusb1
+
+            dbus
+
+            vulkan-validation-layers
           ];
         in
           pkgs.mkShell {
@@ -63,6 +67,10 @@
               doxygen
               python3
               python3Packages.pip
+
+              vulkan-loader
+              vulkan-tools
+              vulkan-tools-lunarg
             ];
 
             buildInputs = runtimeLibs;
