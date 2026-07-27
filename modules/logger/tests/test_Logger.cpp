@@ -7,7 +7,7 @@
 #include <string>
 #include <type_traits>
 
-#include "Logger.hpp"
+#include "GE/Logger.hpp"
 
 using GE::Logger;
 

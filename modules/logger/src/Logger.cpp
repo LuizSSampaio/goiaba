@@ -1,4 +1,4 @@
-#include "./Logger.hpp"
+#include "GE/Logger.hpp"
 
 #include <spdlog/spdlog.h>
 
