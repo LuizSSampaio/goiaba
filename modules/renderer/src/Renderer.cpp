@@ -2,31 +2,17 @@
 
 #include <SDL3/SDL_vulkan.h>
 
-#include <cstdint>
+#include "./backend/vulkan/Vulkan.hpp"
 
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#include <vulkan/vulkan.hpp>
+using namespace GE::Render;
 
-GE::Renderer::Renderer() {
-    vk::ApplicationInfo appInfo{
-        .pApplicationName = "Test",
-        .apiVersion = vk::ApiVersion13,
-    };
-
-    uint32_t instanceExtensionsCount = 0;
-    char const* const* instaceExtensions =
-        SDL_Vulkan_GetInstanceExtensions(&instanceExtensionsCount);
-
-    vk::InstanceCreateInfo instanceCI{
-        .pApplicationInfo = &appInfo,
-        .enabledExtensionCount = instanceExtensionsCount,
-        .ppEnabledExtensionNames = instaceExtensions,
-    };
-
-    vk::Instance instance;
-    vk::createInstance(&instanceCI, nullptr, &instance);
+Renderer::Renderer() {
+    Backend::Vulkan backend = Backend::Vulkan();
+    Backend::Vulkan::Extensions extensions;
+    extensions.names = SDL_Vulkan_GetInstanceExtensions(&extensions.count);
+    backend.Init("Sample", "Goiaba", extensions);
 }
 
-GE::Renderer::~Renderer() {}
+Renderer::~Renderer() {}
 
-void GE::Renderer::Run() {}
+void Renderer::Run() {}

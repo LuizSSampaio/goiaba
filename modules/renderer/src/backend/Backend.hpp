@@ -1,11 +1,7 @@
 #pragma once
 
 namespace GE::Render {
-class Renderer {
+class IBackend {
 public:
-    Renderer();
-    ~Renderer();
-
-    void Run();
 };
 }  // namespace GE::Render
