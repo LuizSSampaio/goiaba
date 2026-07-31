@@ -6,8 +6,10 @@
 
 #include "../Backend.hpp"
 
+#define VULKAN_HPP_NO_EXCEPTIONS
+#define VULKAN_HPP_USE_STD_EXPECTED
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 #define VKApiVersion vk::ApiVersion13
 
@@ -26,26 +28,26 @@ public:
     };
 
     Vulkan() = default;
-    ~Vulkan();
+    ~Vulkan() = default;
 
     std::expected<void, Error> Init(const std::string& appName,
                                     const std::string& engineName,
                                     const Extensions& extensions);
 
 private:
-    vk::Instance instance_;
-    vk::Device device_;
-    vk::Queue queue_;
+    vk::raii::Context context_;
+
+    vk::raii::Instance instance_ = nullptr;
+    vk::raii::Device device_ = nullptr;
+    vk::raii::Queue queue_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
                                               const Extensions& extensions);
 
-    std::expected<vk::PhysicalDevice, Error> SelectPhysicalDevice();
-    static std::expected<vk::PhysicalDevice, Vulkan::Error>
-    PickBestPhysicalDevice(const std::vector<vk::PhysicalDevice>& devices);
+    std::expected<vk::raii::PhysicalDevice, Error> SelectPhysicalDevice();
 
     std::expected<void, Error> CreateQueueAndDevice(
-        vk::PhysicalDevice physicalDevice);
+        const vk::raii::PhysicalDevice& physicalDevice);
 };
 }  // namespace GE::Render::Backend

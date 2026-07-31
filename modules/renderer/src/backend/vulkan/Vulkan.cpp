@@ -4,12 +4,9 @@
 #include <cstdint>
 #include <expected>
 #include <iterator>
-#include <map>
 #include <utility>
 
 using namespace GE::Render::Backend;
-
-Vulkan::~Vulkan() { this->instance_.destroy(); }
 
 std::expected<void, Vulkan::Error> Vulkan::Init(
     const std::string& appName, const std::string& engineName,
@@ -47,51 +44,48 @@ std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
         .enabledExtensionCount = extensions.count,
         .ppEnabledExtensionNames = extensions.names};
 
-    vk::Instance instance;
-    vk::Result res = vk::createInstance(&instanceCI, nullptr, &instance);
-
-    if (res != vk::Result::eSuccess) {
+    auto result = this->context_.createInstance(instanceCI, nullptr);
+    if (!result.has_value()) {
         return std::unexpected(Vulkan::Error::FailedInstanceCreation);
     }
-    this->instance_ = instance;
+
+    this->instance_ = std::move(result.value());
     return {};
 }
 
-std::expected<vk::PhysicalDevice, Vulkan::Error>
+std::expected<vk::raii::PhysicalDevice, Vulkan::Error>
 Vulkan::SelectPhysicalDevice() {
-    auto physicalDevices = this->instance_.enumeratePhysicalDevices();
+    auto enumResult = this->instance_.enumeratePhysicalDevices();
+    if (!enumResult.has_value()) {
+        return std::unexpected(Vulkan::Error::NoVulkanDevice);
+    }
+    auto physicalDevices = std::move(enumResult.value());
     if (physicalDevices.empty()) {
         return std::unexpected(Vulkan::Error::NoVulkanDevice);
     }
 
-    auto bestDevice = Vulkan::PickBestPhysicalDevice(physicalDevices);
-    if (!bestDevice.has_value()) {
-        return std::unexpected(bestDevice.error());
-    }
-    return bestDevice.value();
-}
+    std::optional<size_t> bestIndex;
+    int bestScore = 0;
 
-std::expected<vk::PhysicalDevice, Vulkan::Error> Vulkan::PickBestPhysicalDevice(
-    const std::vector<vk::PhysicalDevice>& devices) {
-    std::multimap<int, vk::PhysicalDevice> candidates;
-    for (const auto& device : devices) {
-        uint32_t score = 0;
+    for (size_t i = 0; i < physicalDevices.size(); i++) {
+        int score = 0;
 
-        auto deviceProperties = device.getProperties();
+        auto deviceProperties = physicalDevices[i].getProperties();
         if (deviceProperties.deviceType ==
             vk::PhysicalDeviceType::eDiscreteGpu) {
             constexpr int discreteGpuScore = 1000;
             score += discreteGpuScore;
         }
 
-        score += deviceProperties.limits.maxImageDimension2D;
+        score += static_cast<int>(deviceProperties.limits.maxImageDimension2D);
 
-        auto deviceFeatures = device.getFeatures();
+        auto deviceFeatures = physicalDevices[i].getFeatures();
         if (!static_cast<bool>(deviceFeatures.geometryShader)) {
             continue;
         }
 
-        auto deviceQueueFamilies = device.getQueueFamilyProperties();
+        auto deviceQueueFamilies =
+            physicalDevices[i].getQueueFamilyProperties();
         bool supportsGraphics = std::ranges::any_of(
             deviceQueueFamilies, [](auto const& queueFamilyProperties) {
                 return static_cast<bool>(queueFamilyProperties.queueFlags &
@@ -101,19 +95,22 @@ std::expected<vk::PhysicalDevice, Vulkan::Error> Vulkan::PickBestPhysicalDevice(
             continue;
         }
 
-        candidates.insert(std::make_pair(score, device));
+        if (score > bestScore) {
+            bestScore = score;
+            bestIndex = i;
+        }
     }
 
-    if (candidates.empty() || candidates.rbegin()->first <= 0) {
+    if (!bestIndex.has_value()) {
         return std::unexpected(Vulkan::Error::NoSuitableDevice);
     }
 
-    return candidates.rbegin()->second;
+    return std::move(physicalDevices[*bestIndex]);
 }
 
 std::expected<void, Vulkan::Error> Vulkan::CreateQueueAndDevice(
     // Start Queue creation
-    vk::PhysicalDevice physicalDevice) {
+    const vk::raii::PhysicalDevice& physicalDevice) {
     auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
     auto graphicsQueueFamilyProperty =
         std::ranges::find_if(queueFamilyProperties, [](auto const& qfp) {
@@ -167,7 +164,12 @@ std::expected<void, Vulkan::Error> Vulkan::CreateQueueAndDevice(
         .ppEnabledExtensionNames = deviceExtensions.data(),
     };
 
-    this->device_ = physicalDevice.createDevice(deviceCI);
+    auto result = physicalDevice.createDevice(deviceCI, nullptr);
+    if (!result.has_value()) {
+        return std::unexpected(Vulkan::Error::NoSuitableDevice);
+    }
+
+    this->device_ = std::move(result.value());
 
     // Finish queue creation
     this->queue_ = this->device_.getQueue(graphicsIndex, 0);
