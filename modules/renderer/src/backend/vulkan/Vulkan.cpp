@@ -166,7 +166,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateQueueAndDevice(
 
     auto result = physicalDevice.createDevice(deviceCI, nullptr);
     if (!result.has_value()) {
-        return std::unexpected(Vulkan::Error::NoSuitableDevice);
+        return std::unexpected(Vulkan::Error::FailedDeviceCreation);
     }
 
     this->device_ = std::move(result.value());

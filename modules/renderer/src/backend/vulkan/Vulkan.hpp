@@ -20,6 +20,7 @@ public:
         FailedInstanceCreation,
         NoVulkanDevice,
         NoSuitableDevice,
+        FailedDeviceCreation,
     };
 
     struct Extensions {
