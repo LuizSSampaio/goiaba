@@ -34,13 +34,18 @@ public:
 
 private:
     vk::Instance instance_;
+    vk::Device device_;
+    vk::Queue queue_;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
                                               const Extensions& extensions);
 
-    std::expected<void, Error> SelectDevice();
-    static std::expected<vk::PhysicalDevice, Vulkan::Error> PickBestDevice(
-        const std::vector<vk::PhysicalDevice>& devices);
+    std::expected<vk::PhysicalDevice, Error> SelectPhysicalDevice();
+    static std::expected<vk::PhysicalDevice, Vulkan::Error>
+    PickBestPhysicalDevice(const std::vector<vk::PhysicalDevice>& devices);
+
+    std::expected<void, Error> CreateQueueAndDevice(
+        vk::PhysicalDevice physicalDevice);
 };
 }  // namespace GE::Render::Backend
