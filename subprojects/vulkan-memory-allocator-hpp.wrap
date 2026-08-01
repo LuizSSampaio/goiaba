@@ -1,0 +1,9 @@
+[wrap-git]
+url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp
+revision = master
+depth = 1
+method = cmake
+clone-recursive = true
+
+[provide]
+VulkanMemoryAllocator-Hpp = VulkanMemoryAllocator_Hpp_dep

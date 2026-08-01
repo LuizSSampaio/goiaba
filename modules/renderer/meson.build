@@ -4,7 +4,7 @@ logger_dep = dependency('goiaba_logger')
 
 vk_loader_dep = dependency('vulkan')
 vk_headers_dep = dependency('VulkanHeaders')
-vk_vma_dep = dependency('VulkanMemoryAllocator')
+vk_vma_hpp_dep = dependency('VulkanMemoryAllocator-Hpp')
 sdl3_dep = dependency('sdl3')
 
 renderer_lib_inc = include_directories('include')
@@ -14,7 +14,7 @@ renderer_lib_deps = declare_dependency(
         logger_dep,
         vk_loader_dep,
         vk_headers_dep,
-        vk_vma_dep,
+        vk_vma_hpp_dep,
         sdl3_dep,
     ],
     include_directories: renderer_lib_inc,
