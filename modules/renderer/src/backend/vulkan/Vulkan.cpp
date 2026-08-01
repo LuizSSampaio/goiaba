@@ -12,19 +12,25 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
     const std::string& appName, const std::string& engineName,
     const Vulkan::Extensions& extensions) {
     auto instanceRes = this->CreateInstance(appName, engineName, extensions);
-    if (!instanceRes) {
+    if (!instanceRes.has_value()) {
         return std::unexpected(instanceRes.error());
     }
 
     auto physicalDeviceRes = this->SelectPhysicalDevice();
-    if (!physicalDeviceRes) {
+    if (!physicalDeviceRes.has_value()) {
         return std::unexpected(physicalDeviceRes.error());
     }
 
     auto queueAndDeviceRes =
         this->CreateQueueAndDevice(physicalDeviceRes.value());
-    if (!queueAndDeviceRes) {
+    if (!queueAndDeviceRes.has_value()) {
         return std::unexpected(queueAndDeviceRes.error());
+    }
+
+    auto allocRes = this->CreateAllocator(
+        this->instance_, physicalDeviceRes.value(), this->device_);
+    if (!allocRes.has_value()) {
+        return std::unexpected(allocRes.error());
     }
 
     return {};
@@ -173,5 +179,22 @@ std::expected<void, Vulkan::Error> Vulkan::CreateQueueAndDevice(
 
     // Finish queue creation
     this->queue_ = this->device_.getQueue(graphicsIndex, 0);
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::CreateAllocator(
+    const vk::raii::Instance& instance,
+    const vk::raii::PhysicalDevice& physicalDevice,
+    const vk::raii::Device& device) {
+    vma::AllocatorCreateInfo allocatorCI{
+        .flags = {},
+        .physicalDevice = physicalDevice,
+    };
+    auto allocRes = vma::raii::createAllocator(instance, device, allocatorCI);
+    if (!allocRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedAllocatorCreation);
+    }
+
+    this->alloc_ = std::move(allocRes.value());
     return {};
 }

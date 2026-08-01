@@ -1,3 +1,4 @@
+#define VMA_IMPLEMENTATION
 #include "GE/Renderer.hpp"
 
 #include <SDL3/SDL_vulkan.h>

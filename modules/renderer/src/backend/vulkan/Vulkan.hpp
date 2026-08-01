@@ -9,6 +9,7 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_USE_STD_EXPECTED
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#include <vk_mem_alloc_raii.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 #define VKApiVersion vk::ApiVersion13
@@ -21,6 +22,7 @@ public:
         NoVulkanDevice,
         NoSuitableDevice,
         FailedDeviceCreation,
+        FailedAllocatorCreation,
     };
 
     struct Extensions {
@@ -41,6 +43,7 @@ private:
     vk::raii::Instance instance_ = nullptr;
     vk::raii::Device device_ = nullptr;
     vk::raii::Queue queue_ = nullptr;
+    vma::raii::Allocator alloc_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
@@ -50,5 +53,10 @@ private:
 
     std::expected<void, Error> CreateQueueAndDevice(
         const vk::raii::PhysicalDevice& physicalDevice);
+
+    std::expected<void, Error> CreateAllocator(
+        const vk::raii::Instance& instance,
+        const vk::raii::PhysicalDevice& physicalDevice,
+        const vk::raii::Device& device);
 };
 }  // namespace GE::Render::Backend
