@@ -25,6 +25,7 @@ public:
     uint32_t height() override;
     void SetHeight(uint32_t height) override;
 
+    SDL_Window* window();
 private:
     SDL_Window* window_ = nullptr;
     std::string title_;

@@ -1,12 +1,15 @@
-#define VMA_IMPLEMENTATION
-#include "GE/Renderer.hpp"
+#include <expected>
+#include <memory>
 
+#include "src/SDLWindow.hpp"
+#define VMA_IMPLEMENTATION
 #include <SDL3/SDL_vulkan.h>
 
 #include <GE/Logger.hpp>
 #include <string>
 
 #include "./backends/Vulkan.hpp"
+#include "GE/Renderer.hpp"
 
 using namespace GE::Render;
 
@@ -28,7 +31,18 @@ std::expected<void, Renderer::Error> Renderer::InitVulkan() {
     GE::Render::Backends::Vulkan::Extensions extensions;
     extensions.names = SDL_Vulkan_GetInstanceExtensions(&extensions.count);
 
-    auto backendRes = backend.Init("Sample", "Goiaba", extensions);
+    auto sdlWindow = std::make_shared<SDLWindow>();
+    this->window_ = sdlWindow;
+    auto winRes = this->window_->InitWindow("Sample", 1920, 1080,
+                                            Window::Flag::Resizable);
+    if (!winRes.has_value()) {
+        Logger::Critical("Failed to create window(Error: " +
+                             std::to_string(winRes.error()) + ")",
+                         Logger::Engine);
+        return std::unexpected(Renderer::Error::FailedToCreateWindow);
+    }
+
+    auto backendRes = backend.Init(sdlWindow, "Sample", "Goiaba", extensions);
     if (!backendRes.has_value()) {
         Logger::Critical("Failed to initialize Vulkan Backend(Error: " +
                              std::to_string(backendRes.error()) + ")",
@@ -36,9 +50,9 @@ std::expected<void, Renderer::Error> Renderer::InitVulkan() {
         return std::unexpected(Renderer::Error::FailedToInitializeBackend);
     }
 
-    // TODO: Create window and surface
-
     return {};
 }
 
 void Renderer::Run() {}
+
+std::shared_ptr<Window> Renderer::window() { return this->window_; }

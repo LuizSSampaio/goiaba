@@ -3,7 +3,10 @@
 #include <GE/Backend.hpp>
 #include <cstdint>
 #include <expected>
+#include <memory>
 #include <string>
+
+#include "src/SDLWindow.hpp"
 
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_USE_STD_EXPECTED
@@ -32,17 +35,19 @@ public:
     Vulkan() = default;
     ~Vulkan() = default;
 
-    std::expected<void, Error> Init(const std::string& appName,
+    std::expected<void, Error> Init(std::shared_ptr<SDLWindow>& window,
+                                    const std::string& appName,
                                     const std::string& engineName,
                                     const Extensions& extensions);
 
 private:
     vk::raii::Context context_;
+    vma::raii::Allocator alloc_ = nullptr;
 
     vk::raii::Instance instance_ = nullptr;
     vk::raii::Device device_ = nullptr;
     vk::raii::Queue queue_ = nullptr;
-    vma::raii::Allocator alloc_ = nullptr;
+    vk::raii::SurfaceKHR surface_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
@@ -57,5 +62,9 @@ private:
         const vk::raii::Instance& instance,
         const vk::raii::PhysicalDevice& physicalDevice,
         const vk::raii::Device& device);
+
+    std::expected<void, Error> CreateSurface(std::shared_ptr<SDLWindow>& window,
+                                             const vk::raii::Instance& instance,
+                                             const vk::raii::Device& device);
 };
 }  // namespace GE::Render::Backends

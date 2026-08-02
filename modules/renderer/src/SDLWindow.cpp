@@ -65,9 +65,10 @@ std::expected<void, Window::Error> SDLWindow::InitWindow(
     this->SetWidth(width);
     this->SetHeight(height);
 
-    this->window_ =
-        SDL_CreateWindow(this->title_.c_str(), static_cast<int>(width),
-                         static_cast<int>(height), ToSDLFlags(windowFlags));
+    // TODO: Make possible to also init the window with opengl and metal
+    this->window_ = SDL_CreateWindow(
+        this->title_.c_str(), static_cast<int>(width), static_cast<int>(height),
+        ToSDLFlags(windowFlags) | SDL_WINDOW_VULKAN);
     if (this->window_ == nullptr) {
         return std::unexpected(Window::Error::FailToCreateWindow);
     }
@@ -105,3 +106,5 @@ void SDLWindow::SetHeight(uint32_t height) {
     SDL_SetWindowSize(this->window_, static_cast<int>(this->width_),
                       static_cast<int>(this->height_));
 }
+
+SDL_Window* SDLWindow::window() { return this->window_; }

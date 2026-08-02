@@ -9,8 +9,8 @@
 using namespace GE::Render::Backends;
 
 std::expected<void, Vulkan::Error> Vulkan::Init(
-    const std::string& appName, const std::string& engineName,
-    const Vulkan::Extensions& extensions) {
+    std::shared_ptr<SDLWindow>& window, const std::string& appName,
+    const std::string& engineName, const Vulkan::Extensions& extensions) {
     auto instanceRes = this->CreateInstance(appName, engineName, extensions);
     if (!instanceRes.has_value()) {
         return std::unexpected(instanceRes.error());
@@ -31,6 +31,12 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         this->instance_, physicalDeviceRes.value(), this->device_);
     if (!allocRes.has_value()) {
         return std::unexpected(allocRes.error());
+    }
+
+    auto surfaceRes =
+        this->CreateSurface(window, this->instance_, this->device_);
+    if (!surfaceRes.has_value()) {
+        return std::unexpected(surfaceRes.error());
     }
 
     return {};
@@ -196,5 +202,11 @@ std::expected<void, Vulkan::Error> Vulkan::CreateAllocator(
     }
 
     this->alloc_ = std::move(allocRes.value());
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::CreateSurface(
+    std::shared_ptr<SDLWindow>& window, const vk::raii::Instance& instance,
+    const vk::raii::Device& device) {
     return {};
 }
