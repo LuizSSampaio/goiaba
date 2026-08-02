@@ -6,7 +6,7 @@
 #include <iterator>
 #include <utility>
 
-using namespace GE::Render::Backend;
+using namespace GE::Render::Backends;
 
 std::expected<void, Vulkan::Error> Vulkan::Init(
     const std::string& appName, const std::string& engineName,

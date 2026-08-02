@@ -1,10 +1,9 @@
 #pragma once
 
+#include <GE/Backend.hpp>
 #include <cstdint>
 #include <expected>
 #include <string>
-
-#include "../Backend.hpp"
 
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_USE_STD_EXPECTED
@@ -14,8 +13,8 @@
 
 #define VKApiVersion vk::ApiVersion13
 
-namespace GE::Render::Backend {
-class Vulkan : public IBackend {
+namespace GE::Render::Backends {
+class Vulkan : public GE::Render::Backend {
 public:
     enum Error : uint8_t {
         FailedInstanceCreation,
@@ -59,4 +58,4 @@ private:
         const vk::raii::PhysicalDevice& physicalDevice,
         const vk::raii::Device& device);
 };
-}  // namespace GE::Render::Backend
+}  // namespace GE::Render::Backends

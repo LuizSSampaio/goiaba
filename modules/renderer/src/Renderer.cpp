@@ -6,7 +6,7 @@
 #include <GE/Logger.hpp>
 #include <string>
 
-#include "./backend/vulkan/Vulkan.hpp"
+#include "./backends/Vulkan.hpp"
 
 using namespace GE::Render;
 
@@ -24,8 +24,8 @@ std::expected<void, Renderer::Error> Renderer::Init(Renderer::Backend backend) {
 }
 
 std::expected<void, Renderer::Error> Renderer::InitVulkan() {
-    GE::Render::Backend::Vulkan backend = GE::Render::Backend::Vulkan();
-    GE::Render::Backend::Vulkan::Extensions extensions;
+    GE::Render::Backends::Vulkan backend = GE::Render::Backends::Vulkan();
+    GE::Render::Backends::Vulkan::Extensions extensions;
     extensions.names = SDL_Vulkan_GetInstanceExtensions(&extensions.count);
 
     auto backendRes = backend.Init("Sample", "Goiaba", extensions);

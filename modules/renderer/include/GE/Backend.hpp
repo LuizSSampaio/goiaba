@@ -1,8 +1,8 @@
 #pragma once
 
 namespace GE::Render {
-class IBackend {
+class Backend {
 public:
-    virtual ~IBackend() = default;
+    virtual ~Backend() = default;
 };
 }  // namespace GE::Render
