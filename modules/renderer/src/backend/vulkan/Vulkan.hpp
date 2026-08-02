@@ -17,7 +17,7 @@
 namespace GE::Render::Backend {
 class Vulkan : public IBackend {
 public:
-    enum Error {
+    enum Error : uint8_t {
         FailedInstanceCreation,
         NoVulkanDevice,
         NoSuitableDevice,
