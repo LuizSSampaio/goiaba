@@ -63,8 +63,7 @@ private:
         const vk::raii::PhysicalDevice& physicalDevice,
         const vk::raii::Device& device);
 
-    std::expected<void, Error> CreateSurface(std::shared_ptr<SDLWindow>& window,
-                                             const vk::raii::Instance& instance,
-                                             const vk::raii::Device& device);
+    std::expected<void, Error> CreateSurface(
+        std::shared_ptr<SDLWindow>& window, const vk::raii::Instance& instance);
 };
 }  // namespace GE::Render::Backends
