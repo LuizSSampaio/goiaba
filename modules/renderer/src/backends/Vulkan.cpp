@@ -240,7 +240,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
     vk::Extent2D swapchainExtent = surfaceCapsRes.value().currentExtent;
     constexpr auto waylandDefaultWidth = 0xFFFFFFFF;
     if (surfaceCapsRes.value().currentExtent.width == waylandDefaultWidth) {
-        swapchainExtent = {
+        swapchainExtent = vk::Extent2D{
             .width = window->width(),
             .height = window->height(),
         };
