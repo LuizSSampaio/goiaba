@@ -210,9 +210,11 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSurface(
     std::shared_ptr<SDLWindow>& window, const vk::raii::Instance& instance) {
     VkSurfaceKHR rawSurface = nullptr;
     // TODO: Remove SDL function from vulkan backend
-    SDL_Vulkan_CreateSurface(window->window(),
-                             static_cast<VkInstance>(*instance), nullptr,
-                             &rawSurface);
+    if (!SDL_Vulkan_CreateSurface(window->window(),
+                                  static_cast<VkInstance>(*instance), nullptr,
+                                  &rawSurface)) {
+        return std::unexpected(Vulkan::Error::FailedSurfaceCreation);
+    }
 
     this->surface_ = vk::raii::SurfaceKHR(instance, rawSurface);
 

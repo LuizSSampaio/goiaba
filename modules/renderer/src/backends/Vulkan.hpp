@@ -25,6 +25,7 @@ public:
         NoSuitableDevice,
         FailedDeviceCreation,
         FailedAllocatorCreation,
+        FailedSurfaceCreation,
     };
 
     struct Extensions {
