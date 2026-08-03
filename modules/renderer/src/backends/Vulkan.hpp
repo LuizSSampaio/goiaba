@@ -29,6 +29,8 @@ public:
         FailedToGetSurfaceCaps,
         FailedSwapchainCreation,
         FailedToGetSwapchainImages,
+        FailedDepthImageCreation,
+        FailedDepthImageViewCreation,
     };
 
     struct Extensions {
@@ -55,6 +57,8 @@ private:
     vk::raii::SwapchainKHR swapchain_ = nullptr;
     std::vector<vk::Image> swapchainImages_;
     std::vector<vk::raii::ImageView> swapchainImageViews_;
+    vk::raii::Image depthImage_ = nullptr;
+    vk::raii::ImageView depthImageView_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
@@ -77,6 +81,10 @@ private:
     std::expected<void, Error> CreateSwapchain(
         const std::shared_ptr<Window>& window,
         const vk::raii::SurfaceKHR& surface, const vk::raii::Device& device,
+        const vk::raii::PhysicalDevice& physicalDevice);
+
+    std::expected<void, Error> DepthAttachment(
+        const std::shared_ptr<Window>& window, const vk::raii::Device& device,
         const vk::raii::PhysicalDevice& physicalDevice);
 };
 }  // namespace GE::Render::Backends

@@ -46,6 +46,12 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         return std::unexpected(swapchainRes.error());
     }
 
+    auto depthAttachRes =
+        this->DepthAttachment(window, this->device_, physicalDeviceRes.value());
+    if (!depthAttachRes.has_value()) {
+        return std::unexpected(depthAttachRes.error());
+    }
+
     return {};
 }
 
@@ -275,6 +281,74 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
         return std::unexpected(Vulkan::Error::FailedToGetSwapchainImages);
     }
     this->swapchainImages_ = swapchainImagesRes.value();
+
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::DepthAttachment(
+    const std::shared_ptr<Window>& window, const vk::raii::Device& device,
+    const vk::raii::PhysicalDevice& physicalDevice) {
+    std::vector<vk::Format> depthFormatList{
+        vk::Format::eD32SfloatS8Uint,
+        vk::Format::eD24UnormS8Uint,
+    };
+    vk::Format depthFormat = vk::Format::eUndefined;
+
+    for (auto format : depthFormatList) {
+        auto formatProp = physicalDevice.getFormatProperties2(format);
+        if (formatProp.formatProperties.optimalTilingFeatures &
+            vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
+            depthFormat = format;
+            break;
+        }
+    }
+
+    vk::ImageCreateInfo depthImageCI = {
+        .imageType = vk::ImageType::e2D,
+        .format = depthFormat,
+        .extent =
+            {
+                .width = window->width(),
+                .height = window->height(),
+                .depth = 1,
+            },
+        .mipLevels = 1,
+        .arrayLayers = 1,
+        .samples = vk::SampleCountFlagBits::e1,
+        .tiling = vk::ImageTiling::eOptimal,
+        .usage = vk::ImageUsageFlagBits::eDepthStencilAttachment,
+        .initialLayout = vk::ImageLayout::eUndefined,
+    };
+
+    vma::AllocationCreateInfo allocCI = {
+        .flags = vma::AllocationCreateFlagBits::eDedicatedMemory,
+        .usage = vma::MemoryUsage::eAuto,
+    };
+
+    auto depthImageRes = this->alloc_.createImage(depthImageCI, allocCI);
+    if (!depthImageRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedDepthImageCreation);
+    }
+
+    vk::ImageViewCreateInfo depthViewCI = {
+        .image = depthImageRes.value(),
+        .viewType = vk::ImageViewType::e2D,
+        .format = depthFormat,
+        .subresourceRange =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eDepth,
+                .levelCount = 1,
+                .layerCount = 1,
+            },
+    };
+
+    auto depthImageViewRes = device.createImageView(depthViewCI);
+    if (!depthImageViewRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedDepthImageViewCreation);
+    }
+
+    this->depthImage_ = std::move(depthImageRes.value());
+    this->depthImageView_ = std::move(depthImageViewRes.value());
 
     return {};
 }
