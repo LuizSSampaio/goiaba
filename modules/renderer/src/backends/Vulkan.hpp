@@ -28,6 +28,7 @@ public:
         FailedSurfaceCreation,
         FailedToGetSurfaceCaps,
         FailedSwapchainCreation,
+        FailedToGetSwapchainImages,
     };
 
     struct Extensions {
@@ -52,6 +53,8 @@ private:
     vk::raii::Queue queue_ = nullptr;
     vk::raii::SurfaceKHR surface_ = nullptr;
     vk::raii::SwapchainKHR swapchain_ = nullptr;
+    std::vector<vk::Image> swapchainImages_;
+    std::vector<vk::raii::ImageView> swapchainImageViews_;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,

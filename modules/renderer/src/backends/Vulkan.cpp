@@ -268,7 +268,13 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
     if (!swapchainRes.has_value()) {
         return std::unexpected(Vulkan::Error::FailedSwapchainCreation);
     }
-
     this->swapchain_ = std::move(swapchainRes.value());
+
+    auto swapchainImagesRes = this->swapchain_.getImages();
+    if (!swapchainImagesRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedToGetSwapchainImages);
+    }
+    this->swapchainImages_ = swapchainImagesRes.value();
+
     return {};
 }
