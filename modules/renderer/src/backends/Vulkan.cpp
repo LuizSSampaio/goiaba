@@ -40,6 +40,12 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         return std::unexpected(surfaceRes.error());
     }
 
+    auto swapchainRes = this->CreateSwapchain(
+        window, this->surface_, this->device_, physicalDeviceRes.value());
+    if (!swapchainRes.has_value()) {
+        return std::unexpected(swapchainRes.error());
+    }
+
     return {};
 }
 
@@ -207,7 +213,8 @@ std::expected<void, Vulkan::Error> Vulkan::CreateAllocator(
 }
 
 std::expected<void, Vulkan::Error> Vulkan::CreateSurface(
-    std::shared_ptr<SDLWindow>& window, const vk::raii::Instance& instance) {
+    const std::shared_ptr<SDLWindow>& window,
+    const vk::raii::Instance& instance) {
     VkSurfaceKHR rawSurface = nullptr;
     // TODO: Remove SDL function from vulkan backend
     if (!SDL_Vulkan_CreateSurface(window->window(),
@@ -218,5 +225,50 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSurface(
 
     this->surface_ = vk::raii::SurfaceKHR(instance, rawSurface);
 
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
+    const std::shared_ptr<Window>& window, const vk::raii::SurfaceKHR& surface,
+    const vk::raii::Device& device,
+    const vk::raii::PhysicalDevice& physicalDevice) {
+    auto surfaceCapsRes = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+    if (!surfaceCapsRes.has_value()) {
+        return std::unexpected(Vulkan::FailedToGetSurfaceCaps);
+    }
+
+    vk::Extent2D swapchainExtent = surfaceCapsRes.value().currentExtent;
+    constexpr auto waylandDefaultWidth = 0xFFFFFFFF;
+    if (surfaceCapsRes.value().currentExtent.width == waylandDefaultWidth) {
+        swapchainExtent = {
+            .width = window->width(),
+            .height = window->height(),
+        };
+    }
+
+    const vk::Format imageFormat = vk::Format::eA8B8G8R8SrgbPack32;
+    vk::SwapchainCreateInfoKHR swapchainCI = {
+        .surface = surface,
+        .minImageCount = surfaceCapsRes.value().minImageCount,
+        .imageFormat = imageFormat,
+        .imageColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear,
+        .imageExtent =
+            {
+                .width = swapchainExtent.width,
+                .height = swapchainExtent.height,
+            },
+        .imageArrayLayers = 1,
+        .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+        .preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity,
+        .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        .presentMode = vk::PresentModeKHR::eFifo,
+    };
+
+    auto swapchainRes = device.createSwapchainKHR(swapchainCI);
+    if (!swapchainRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedSwapchainCreation);
+    }
+
+    this->swapchain_ = std::move(swapchainRes.value());
     return {};
 }

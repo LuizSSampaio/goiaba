@@ -26,6 +26,8 @@ public:
         FailedDeviceCreation,
         FailedAllocatorCreation,
         FailedSurfaceCreation,
+        FailedToGetSurfaceCaps,
+        FailedSwapchainCreation,
     };
 
     struct Extensions {
@@ -49,6 +51,7 @@ private:
     vk::raii::Device device_ = nullptr;
     vk::raii::Queue queue_ = nullptr;
     vk::raii::SurfaceKHR surface_ = nullptr;
+    vk::raii::SwapchainKHR swapchain_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
@@ -65,6 +68,12 @@ private:
         const vk::raii::Device& device);
 
     std::expected<void, Error> CreateSurface(
-        std::shared_ptr<SDLWindow>& window, const vk::raii::Instance& instance);
+        const std::shared_ptr<SDLWindow>& window,
+        const vk::raii::Instance& instance);
+
+    std::expected<void, Error> CreateSwapchain(
+        const std::shared_ptr<Window>& window,
+        const vk::raii::SurfaceKHR& surface, const vk::raii::Device& device,
+        const vk::raii::PhysicalDevice& physicalDevice);
 };
 }  // namespace GE::Render::Backends
