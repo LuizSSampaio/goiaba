@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_vulkan.h>
 
+#include <GE/Logger.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <expected>
@@ -9,6 +10,24 @@
 #include <utility>
 
 using namespace GE::Render::Backends;
+
+#ifndef NDEBUG
+namespace {
+VKAPI_ATTR vk::Bool32 VKAPI_CALL
+DebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
+              vk::DebugUtilsMessageTypeFlagsEXT,
+              const vk::DebugUtilsMessengerCallbackDataEXT* data, void*) {
+    if (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError) {
+        GE::Logger::Error(data->pMessage, GE::Logger::Engine);
+    } else if (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning) {
+        GE::Logger::Warn(data->pMessage, GE::Logger::Engine);
+    } else {
+        GE::Logger::Trace(data->pMessage, GE::Logger::Engine);
+    }
+    return vk::False;
+}
+}  // namespace
+#endif
 
 std::expected<void, Vulkan::Error> Vulkan::Init(
     std::shared_ptr<SDLWindow>& window, const std::string& appName,
@@ -64,10 +83,29 @@ std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
         .apiVersion = VKApiVersion,
     };
 
+    // TODO: refactor Extenssions to use vector
+    std::vector<const char*> exts;
+    auto extSpan =
+        std::span<const char* const>(extensions.names, extensions.count);
+    exts.reserve(extSpan.size());
+    for (const char* name : extSpan) {
+        exts.push_back(name);
+    }
+
+    std::vector<const char*> layers;
+
+#ifndef NDEBUG
+    layers.push_back("VK_LAYER_KHRONOS_validation");
+    exts.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+
     vk::InstanceCreateInfo instanceCI{
         .pApplicationInfo = &appInfo,
-        .enabledExtensionCount = extensions.count,
-        .ppEnabledExtensionNames = extensions.names};
+        .enabledLayerCount = static_cast<uint32_t>(layers.size()),
+        .ppEnabledLayerNames = layers.data(),
+        .enabledExtensionCount = static_cast<uint32_t>(exts.size()),
+        .ppEnabledExtensionNames = exts.data(),
+    };
 
     auto result = this->context_.createInstance(instanceCI, nullptr);
     if (!result.has_value()) {
@@ -75,6 +113,24 @@ std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
     }
 
     this->instance_ = std::move(result.value());
+
+#ifndef NDEBUG
+    vk::DebugUtilsMessengerCreateInfoEXT messengerCI{
+        .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+                           vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+                           vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                           vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+        .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                       vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                       vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+        .pfnUserCallback = DebugCallback,
+        .pUserData = nullptr,
+    };
+    this->debugMessenger_ =
+        this->instance_.createDebugUtilsMessengerEXT(messengerCI)
+            .value_or(nullptr);
+#endif
+
     return {};
 }
 
@@ -253,10 +309,10 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
     }
 
     vk::SurfaceFormatKHR chosen = formats[0];
-    for (const auto& f : formats) {
-        if (f.format == vk::Format::eB8G8R8A8Srgb &&
-            f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-            chosen = f;
+    for (const auto& format : formats) {
+        if (format.format == vk::Format::eB8G8R8A8Srgb &&
+            format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+            chosen = format;
             break;
         }
     }
@@ -264,10 +320,10 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
     const auto& caps = surfaceCapsRes.value();
     vk::Extent2D swapchainExtent;
     constexpr auto waylandDefaultWidth = 0xFFFFFFFF;
-    if (caps.currentExtent.width == waylandDefaultWidth) {
+    if (caps.currentExtent.width != waylandDefaultWidth) {
         swapchainExtent = caps.currentExtent;
     } else {
-        swapchainExtent = {
+        swapchainExtent = vk::Extent2D{
             .width = std::clamp(window->width(), caps.minImageExtent.width,
                                 caps.maxImageExtent.width),
             .height = std::clamp(window->height(), caps.minImageExtent.height,
