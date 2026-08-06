@@ -5,10 +5,13 @@
 #include <expected>
 #include <memory>
 
+#include "GE/Backend.hpp"
+
 namespace GE::Render {
 class Renderer {
 public:
     enum Error : uint8_t {
+        FailedToInitializeSDL,
         FailedToCreateWindow,
         FailedToInitializeBackend,
     };
@@ -18,7 +21,7 @@ public:
     };
 
     Renderer() = default;
-    ~Renderer() = default;
+    ~Renderer();
 
     std::expected<void, Error> Init(Backend backend);
     void Run();

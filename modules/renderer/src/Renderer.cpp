@@ -3,6 +3,7 @@
 
 #include "src/SDLWindow.hpp"
 #define VMA_IMPLEMENTATION
+#include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
 #include <GE/Logger.hpp>
@@ -13,7 +14,13 @@
 
 using namespace GE::Render;
 
+Renderer::~Renderer() { SDL_Quit(); }
+
 std::expected<void, Renderer::Error> Renderer::Init(Renderer::Backend backend) {
+    if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
+        return std::unexpected(Renderer::Error::FailedToInitializeSDL);
+    }
+
     switch (backend) {
         case Renderer::Backend::Vulkan:
             auto vkRes = this->InitVulkan();
