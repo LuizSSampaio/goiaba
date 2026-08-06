@@ -261,12 +261,17 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
         }
     }
 
-    vk::Extent2D swapchainExtent = surfaceCapsRes.value().currentExtent;
+    const auto& caps = surfaceCapsRes.value();
+    vk::Extent2D swapchainExtent;
     constexpr auto waylandDefaultWidth = 0xFFFFFFFF;
-    if (surfaceCapsRes.value().currentExtent.width == waylandDefaultWidth) {
-        swapchainExtent = vk::Extent2D{
-            .width = window->width(),
-            .height = window->height(),
+    if (caps.currentExtent.width == waylandDefaultWidth) {
+        swapchainExtent = caps.currentExtent;
+    } else {
+        swapchainExtent = {
+            .width = std::clamp(window->width(), caps.minImageExtent.width,
+                                caps.maxImageExtent.width),
+            .height = std::clamp(window->height(), caps.minImageExtent.height,
+                                 caps.maxImageExtent.height),
         };
     }
 
