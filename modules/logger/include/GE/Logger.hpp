@@ -9,6 +9,9 @@ public:
 
     enum Environment { Engine, Game };
 
+    static void Init();
+    static void Shutdown();
+
     static void Info(const std::string& message,
                      Environment environment = Environment::Game);
     static void Warn(const std::string& message,
