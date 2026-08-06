@@ -34,7 +34,7 @@ std::expected<void, Renderer::Error> Renderer::Init(Renderer::Backend backend) {
 }
 
 std::expected<void, Renderer::Error> Renderer::InitVulkan() {
-    GE::Render::Backends::Vulkan backend = GE::Render::Backends::Vulkan();
+    auto backend = std::make_unique<GE::Render::Backends::Vulkan>();
     GE::Render::Backends::Vulkan::Extensions extensions;
     extensions.names = SDL_Vulkan_GetInstanceExtensions(&extensions.count);
 
@@ -49,7 +49,7 @@ std::expected<void, Renderer::Error> Renderer::InitVulkan() {
         return std::unexpected(Renderer::Error::FailedToCreateWindow);
     }
 
-    auto backendRes = backend.Init(sdlWindow, "Sample", "Goiaba", extensions);
+    auto backendRes = backend->Init(sdlWindow, "Sample", "Goiaba", extensions);
     if (!backendRes.has_value()) {
         Logger::Critical("Failed to initialize Vulkan Backend(Error: " +
                              std::to_string(backendRes.error()) + ")",
@@ -57,9 +57,13 @@ std::expected<void, Renderer::Error> Renderer::InitVulkan() {
         return std::unexpected(Renderer::Error::FailedToInitializeBackend);
     }
 
+    this->backend_ = std::move(backend);
     return {};
 }
 
-void Renderer::Run() {}
+void Renderer::Run() {
+    while (true) {
+    };
+}
 
 std::shared_ptr<Window> Renderer::window() { return this->window_; }

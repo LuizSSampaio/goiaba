@@ -17,7 +17,7 @@
 #define VKApiVersion vk::ApiVersion13
 
 namespace GE::Render::Backends {
-class Vulkan : public GE::Render::Backend {
+class Vulkan : public GE::Render::IBackend {
 public:
     enum Error : uint8_t {
         FailedInstanceCreation,

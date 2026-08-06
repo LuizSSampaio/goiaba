@@ -29,6 +29,7 @@ public:
     std::shared_ptr<Window> window();
 
 private:
+    std::unique_ptr<IBackend> backend_;
     std::shared_ptr<Window> window_;
 
     std::expected<void, Error> InitVulkan();
