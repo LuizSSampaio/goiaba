@@ -11,6 +11,7 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_USE_STD_EXPECTED
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define VULKAN_HPP_ASSERT_ON_RESULT(...)
 #include <vk_mem_alloc_raii.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
@@ -23,10 +24,12 @@ public:
         FailedInstanceCreation,
         NoVulkanDevice,
         NoSuitableDevice,
+        NoSurfaceFormat,
         FailedDeviceCreation,
         FailedAllocatorCreation,
         FailedSurfaceCreation,
         FailedToGetSurfaceCaps,
+        FailedToGetSurfaceFormats,
         FailedSwapchainCreation,
         FailedToGetSwapchainImages,
         FailedDepthImageCreation,

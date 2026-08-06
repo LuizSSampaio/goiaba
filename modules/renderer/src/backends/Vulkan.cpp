@@ -243,6 +243,24 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
         return std::unexpected(Vulkan::FailedToGetSurfaceCaps);
     }
 
+    auto surfaceFormatsRes = physicalDevice.getSurfaceFormatsKHR(surface);
+    if (!surfaceFormatsRes.has_value()) {
+        return std::unexpected(Vulkan::FailedToGetSurfaceFormats);
+    }
+    const auto& formats = surfaceFormatsRes.value();
+    if (formats.empty()) {
+        return std::unexpected(Vulkan::NoSurfaceFormat);
+    }
+
+    vk::SurfaceFormatKHR chosen = formats[0];
+    for (const auto& f : formats) {
+        if (f.format == vk::Format::eB8G8R8A8Srgb &&
+            f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+            chosen = f;
+            break;
+        }
+    }
+
     vk::Extent2D swapchainExtent = surfaceCapsRes.value().currentExtent;
     constexpr auto waylandDefaultWidth = 0xFFFFFFFF;
     if (surfaceCapsRes.value().currentExtent.width == waylandDefaultWidth) {
@@ -252,12 +270,11 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
         };
     }
 
-    const vk::Format imageFormat = vk::Format::eA8B8G8R8SrgbPack32;
     vk::SwapchainCreateInfoKHR swapchainCI = {
         .surface = surface,
         .minImageCount = surfaceCapsRes.value().minImageCount,
-        .imageFormat = imageFormat,
-        .imageColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear,
+        .imageFormat = chosen.format,
+        .imageColorSpace = chosen.colorSpace,
         .imageExtent =
             {
                 .width = swapchainExtent.width,
