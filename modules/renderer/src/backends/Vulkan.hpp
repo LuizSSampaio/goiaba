@@ -48,16 +48,15 @@ public:
 
 private:
     vk::raii::Context context_;
-    vma::raii::Allocator alloc_ = nullptr;
-
     vk::raii::Instance instance_ = nullptr;
+    vk::raii::SurfaceKHR surface_ = nullptr;
     vk::raii::Device device_ = nullptr;
     vk::raii::Queue queue_ = nullptr;
-    vk::raii::SurfaceKHR surface_ = nullptr;
     vk::raii::SwapchainKHR swapchain_ = nullptr;
     std::vector<vk::Image> swapchainImages_;
     std::vector<vk::raii::ImageView> swapchainImageViews_;
-    vk::raii::Image depthImage_ = nullptr;
+    vma::raii::Allocator alloc_ = nullptr;
+    vma::raii::Image depthImage_ = nullptr;
     vk::raii::ImageView depthImageView_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
