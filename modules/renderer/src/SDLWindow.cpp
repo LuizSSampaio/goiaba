@@ -53,7 +53,7 @@ constexpr SDL_WindowFlags ToSDLFlags(Window::Flag flags) {
 }  // namespace
 
 SDLWindow::~SDLWindow() {
-    if (this->window_ == nullptr) {
+    if (this->window_ != nullptr) {
         SDL_DestroyWindow(this->window_);
     }
 }
