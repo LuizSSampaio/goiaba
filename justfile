@@ -7,7 +7,7 @@ build:
     meson compile -C {{ builddir }}
 
 run:
-    ./{{ builddir }}/{{ binName }}
+    ./{{ builddir }}/samples/{{ binName }}
 
 brun: build run
 
