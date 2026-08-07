@@ -42,7 +42,7 @@ public:
     };
 
     Vulkan() = default;
-    ~Vulkan() = default;
+    ~Vulkan() override = default;
 
     std::expected<void, Error> Init(std::shared_ptr<SDLWindow>& window,
                                     const std::string& appName,
