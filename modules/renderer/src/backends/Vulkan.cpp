@@ -31,7 +31,7 @@ DebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
 
 std::expected<void, Vulkan::Error> Vulkan::Init(
     std::shared_ptr<SDLWindow>& window, const std::string& appName,
-    const std::string& engineName, const Vulkan::Extensions& extensions) {
+    const std::string& engineName, Extensions& extensions) {
     auto instanceRes = this->CreateInstance(appName, engineName, extensions);
     if (!instanceRes.has_value()) {
         return std::unexpected(instanceRes.error());
@@ -76,35 +76,26 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
 
 std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
     const std::string& appName, const std::string& engineName,
-    const Extensions& extensions) {
+    Extensions& extensions) {
     vk::ApplicationInfo appInfo{
         .pApplicationName = appName.c_str(),
         .pEngineName = engineName.c_str(),
         .apiVersion = VKApiVersion,
     };
 
-    // TODO: refactor Extenssions to use vector
-    std::vector<const char*> exts;
-    auto extSpan =
-        std::span<const char* const>(extensions.names, extensions.count);
-    exts.reserve(extSpan.size());
-    for (const char* name : extSpan) {
-        exts.push_back(name);
-    }
-
     std::vector<const char*> layers;
 
 #ifndef NDEBUG
+    extensions.data.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     layers.push_back("VK_LAYER_KHRONOS_validation");
-    exts.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
     vk::InstanceCreateInfo instanceCI{
         .pApplicationInfo = &appInfo,
         .enabledLayerCount = static_cast<uint32_t>(layers.size()),
         .ppEnabledLayerNames = layers.data(),
-        .enabledExtensionCount = static_cast<uint32_t>(exts.size()),
-        .ppEnabledExtensionNames = exts.data(),
+        .enabledExtensionCount = static_cast<uint32_t>(extensions.data.size()),
+        .ppEnabledExtensionNames = extensions.data.data(),
     };
 
     auto result = this->context_.createInstance(instanceCI, nullptr);

@@ -5,6 +5,7 @@
 #include <expected>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "src/SDLWindow.hpp"
 
@@ -37,8 +38,12 @@ public:
     };
 
     struct Extensions {
-        char const* const* names;
-        uint32_t count;
+        std::vector<const char*> data;
+
+        Extensions(char const* const* names, uint32_t count) {
+            const std::span<const char* const> view{names, count};
+            this->data = std::vector<const char*>(view.begin(), view.end());
+        }
     };
 
     Vulkan() = default;
@@ -47,7 +52,7 @@ public:
     std::expected<void, Error> Init(std::shared_ptr<SDLWindow>& window,
                                     const std::string& appName,
                                     const std::string& engineName,
-                                    const Extensions& extensions);
+                                    Extensions& extensions);
 
 private:
     vk::raii::Context context_;
@@ -65,7 +70,7 @@ private:
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
-                                              const Extensions& extensions);
+                                              Extensions& extensions);
 
     std::expected<vk::raii::PhysicalDevice, Error> SelectPhysicalDevice();
 

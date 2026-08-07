@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <expected>
 #include <memory>
 
@@ -34,9 +35,11 @@ std::expected<void, Renderer::Error> Renderer::Init(Renderer::Backend backend) {
 }
 
 std::expected<void, Renderer::Error> Renderer::InitVulkan() {
-    auto backend = std::make_unique<GE::Render::Backends::Vulkan>();
-    GE::Render::Backends::Vulkan::Extensions extensions;
-    extensions.names = SDL_Vulkan_GetInstanceExtensions(&extensions.count);
+    auto backend = std::make_unique<Backends::Vulkan>();
+
+    uint32_t count = 0;
+    const char* const* names = SDL_Vulkan_GetInstanceExtensions(&count);
+    auto extensions = Backends::Vulkan::Extensions(names, count);
 
     auto sdlWindow = std::make_shared<SDLWindow>();
     this->window_ = sdlWindow;
