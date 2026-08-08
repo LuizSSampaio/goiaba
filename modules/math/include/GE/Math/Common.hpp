@@ -1,10 +1,8 @@
 #pragma once
 
+#include <GE/Math/Constants.hpp>
 #include <concepts>
-#include <cstddef>
 #include <type_traits>
-
-#include "GE/Math/Constants.hpp"
 
 namespace GE::Math {
 
@@ -50,55 +48,58 @@ using TVec = typename detail::VecDispatch<N, T>::type;
 
 /// Absolute value, constexpr-friendly (no <cmath> dependency).
 template <Numeric T>
-[[nodiscard]] constexpr T Abs(T x) {
-    return x < T(0) ? -x : x;
+[[nodiscard]] constexpr T Abs(T val) {
+    return val < T(0) ? -val : val;
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr T Min(T a, T b) {
-    return a < b ? a : b;
+[[nodiscard]] constexpr T Min(T valA, T valB) {
+    return valA < valB ? valA : valB;
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr T Max(T a, T b) {
-    return a > b ? a : b;
+[[nodiscard]] constexpr T Max(T valA, T valB) {
+    return valA > valB ? valA : valB;
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr T Clamp(T x, T lo, T hi) {
-    return x < lo ? lo : (x > hi ? hi : x);
+[[nodiscard]] constexpr T Clamp(T val, T lo, T hi) {
+    const auto valHi = (val > hi ? hi : val);
+    return val < lo ? lo : valHi;
 }
 
 /// Linear interpolation: a + t*(b - a). `t` is not clamped.
 template <Numeric T>
-[[nodiscard]] constexpr T Lerp(T a, T b, T t) {
-    return a + t * (b - a);
+[[nodiscard]] constexpr T Lerp(T start, T end, T time) {
+    return start + (time * (end - start));
 }
 
 template <typename T>
-[[nodiscard]] constexpr T Step(T edge, T x) {
-    return x < edge ? T(0) : T(1);
+[[nodiscard]] constexpr T Step(T edge, T val) {
+    return val < edge ? T(0) : T(1);
 }
 
 template <typename T>
-[[nodiscard]] constexpr T Smoothstep(T edge0, T edge1, T x) {
-    T t = Clamp((x - edge0) / (edge1 - edge0), T(0), T(1));
+[[nodiscard]] constexpr T Smoothstep(T edge0, T edge1, T val) {
+    T t = Clamp((val - edge0) / (edge1 - edge0), T(0), T(1));
     return t * t * (T(3) - T(2) * t);
 }
 
 template <typename T>
 [[nodiscard]] constexpr T Radians(T degrees) {
-    return degrees * (Pi<T> / T(180));
+    constexpr auto defautDegree = 180;
+    return degrees * (Pi<T> / T(defautDegree));
 }
 
 template <typename T>
 [[nodiscard]] constexpr T Degrees(T radians) {
-    return radians * (T(180) / Pi<T>);
+    constexpr auto defautDegree = 180;
+    return radians * (T(defautDegree) / Pi<T>);
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr bool Approximately(T a, T b, T eps = Epsilon<T>) {
-    return Abs(a - b) <= eps * Max(T(1), Max(Abs(a), Abs(b)));
+[[nodiscard]] constexpr bool Approximately(T valA, T valB, T eps = Epsilon<T>) {
+    return Abs(valA - valB) <= eps * Max(T(1), Max(Abs(valA), Abs(valB)));
 }
 
 }  // namespace GE::Math
