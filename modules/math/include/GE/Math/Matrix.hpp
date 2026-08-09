@@ -1,12 +1,8 @@
 #pragma once
 
-#include <cstddef>
+#include <GE/Math/Common.hpp>
+#include <array>
 #include <type_traits>
-
-#include "GE/Math/Common.hpp"
-#include "GE/Math/Vector2.hpp"
-#include "GE/Math/Vector3.hpp"
-#include "GE/Math/Vector4.hpp"
 
 namespace GE::Math {
 
@@ -29,7 +25,7 @@ struct TMat {
     static constexpr int kCols = C;
     static constexpr int kRows = R;
 
-    ColType cols[C]{};
+    std::array<ColType, C> cols{};
 
     constexpr TMat() = default;
 
@@ -43,76 +39,105 @@ struct TMat {
     [[nodiscard]] static constexpr TMat Identity()
         requires(C == R)
     {
-        TMat m{};
-        for (int i = 0; i < C; ++i) m.cols[i][i] = T(1);
-        return m;
+        TMat matrix{};
+        for (int i = 0; i < C; ++i) {
+            matrix.cols[i][i] = T(1);
+        }
+        return matrix;
     }
 
     /// Diagonal matrix from a vector of length min(C, R).
-    [[nodiscard]] static constexpr TMat Diagonal(TVec<(C < R ? C : R), T> d) {
-        TMat m{};
-        constexpr int n = C < R ? C : R;
-        for (int i = 0; i < n; ++i) m.cols[i][i] = d[i];
-        return m;
+    [[nodiscard]] static constexpr TMat Diagonal(
+        TVec<(C < R ? C : R), T> diagonal) {
+        TMat matrix{};
+        constexpr int min = C < R ? C : R;
+        for (int i = 0; i < min; ++i) {
+            matrix.cols[i][i] = diagonal[i];
+        }
+        return matrix;
     }
 
     [[nodiscard]] constexpr TMat operator+() const { return *this; }
     [[nodiscard]] constexpr TMat operator-() const {
-        TMat r{};
-        for (int i = 0; i < C; ++i) r.cols[i] = -cols[i];
-        return r;
+        TMat res{};
+        for (int i = 0; i < C; ++i) {
+            res.cols[i] = -cols[i];
+        }
+        return res;
     }
 
     [[nodiscard]] constexpr TMat operator+(TMat rhs) const {
-        TMat r{};
-        for (int i = 0; i < C; ++i) r.cols[i] = cols[i] + rhs.cols[i];
-        return r;
+        TMat res{};
+        for (int i = 0; i < C; ++i) {
+            res.cols[i] = cols[i] + rhs.cols[i];
+        }
+        return res;
     }
     [[nodiscard]] constexpr TMat operator-(TMat rhs) const {
-        TMat r{};
-        for (int i = 0; i < C; ++i) r.cols[i] = cols[i] - rhs.cols[i];
-        return r;
+        TMat res{};
+        for (int i = 0; i < C; ++i) {
+            res.cols[i] = cols[i] - rhs.cols[i];
+        }
+        return res;
     }
-    [[nodiscard]] constexpr TMat operator*(T s) const {
-        TMat r{};
-        for (int i = 0; i < C; ++i) r.cols[i] = cols[i] * s;
-        return r;
+    [[nodiscard]] constexpr TMat operator*(T val) const {
+        TMat res{};
+        for (int i = 0; i < C; ++i) {
+            res.cols[i] = cols[i] * val;
+        }
+        return res;
     }
-    [[nodiscard]] constexpr TMat operator/(T s) const {
-        TMat r{};
-        for (int i = 0; i < C; ++i) r.cols[i] = cols[i] / s;
-        return r;
+    [[nodiscard]] constexpr TMat operator/(T val) const {
+        TMat res{};
+        for (int i = 0; i < C; ++i) {
+            res.cols[i] = cols[i] / val;
+        }
+        return res;
     }
 
     constexpr TMat& operator+=(TMat rhs) {
-        for (int i = 0; i < C; ++i) cols[i] += rhs.cols[i];
+        for (int i = 0; i < C; ++i) {
+            cols[i] += rhs.cols[i];
+        }
         return *this;
     }
     constexpr TMat& operator-=(TMat rhs) {
-        for (int i = 0; i < C; ++i) cols[i] -= rhs.cols[i];
+        for (int i = 0; i < C; ++i) {
+            cols[i] -= rhs.cols[i];
+        }
         return *this;
     }
-    constexpr TMat& operator*=(T s) {
-        for (int i = 0; i < C; ++i) cols[i] *= s;
+    constexpr TMat& operator*=(T val) {
+        for (int i = 0; i < C; ++i) {
+            cols[i] *= val;
+        }
         return *this;
     }
-    constexpr TMat& operator/=(T s) {
-        for (int i = 0; i < C; ++i) cols[i] /= s;
+    constexpr TMat& operator/=(T val) {
+        for (int i = 0; i < C; ++i) {
+            cols[i] /= val;
+        }
         return *this;
     }
 
-    [[nodiscard]] friend constexpr bool operator==(TMat a, TMat b) {
-        for (int i = 0; i < C; ++i)
-            if (a.cols[i] != b.cols[i]) return false;
+    [[nodiscard]] friend constexpr bool operator==(TMat matA, TMat matB) {
+        for (int i = 0; i < C; ++i) {
+            if (matA.cols[i] != matB.cols[i]) {
+                return false;
+            }
+        }
         return true;
     }
 
     /// Transpose (pure permutation) — constexpr, no glm needed.
     [[nodiscard]] constexpr TMat<R, C, T> Transpose() const {
-        TMat<R, C, T> r{};
-        for (int i = 0; i < C; ++i)
-            for (int j = 0; j < R; ++j) r.cols[j][i] = cols[i][j];
-        return r;
+        TMat<R, C, T> res{};
+        for (int i = 0; i < C; ++i) {
+            for (int j = 0; j < R; ++j) {
+                res.cols[j][i] = cols[i][j];
+            }
+        }
+        return res;
     }
 
     // -- Complex ops: declared here, defined in src/Matrix.cpp via glm -------

@@ -1,5 +1,4 @@
-#include "GE/Math/Matrix.hpp"
-
+#include <GE/Math/Matrix.hpp>
 #include <glm/matrix.hpp>  // glm::inverse, glm::determinant, operator*
 
 #include "GlmBridge.hpp"
@@ -42,16 +41,28 @@ TVec<R, T> TMat<C, R, T>::operator*(const TVec<C, T>& rhs) const {
 // shapes glm's inverses are defined for). Non-square / unsupported instantions
 // intentionally not provided (link error if used — add on demand).
 // ---------------------------------------------------------------------------
-#define GE_MATH_INSTANTIATE_SQUARE(N, T)                                \
-    template struct GE::Math::TMat<N, N, T>;                            \
-    template GE::Math::TMat<N, N, T> GE::Math::TMat<N, N, T>::operator* \
-        <N>(const GE::Math::TMat<N, N, T>&) const;
 
-GE_MATH_INSTANTIATE_SQUARE(2, float)
-GE_MATH_INSTANTIATE_SQUARE(3, float)
-GE_MATH_INSTANTIATE_SQUARE(4, float)
-GE_MATH_INSTANTIATE_SQUARE(2, double)
-GE_MATH_INSTANTIATE_SQUARE(3, double)
-GE_MATH_INSTANTIATE_SQUARE(4, double)
-
-#undef GE_MATH_INSTANTIATE_SQUARE
+// 2x2
+template struct GE::Math::TMat<2, 2, float>;
+template GE::Math::TMat<2, 2, float> GE::Math::TMat<2, 2, float>::operator*
+    <2>(const GE::Math::TMat<2, 2, float>&) const;
+// 3x3
+template struct GE::Math::TMat<3, 3, float>;
+template GE::Math::TMat<3, 3, float> GE::Math::TMat<3, 3, float>::operator*
+    <3>(const GE::Math::TMat<3, 3, float>&) const;
+// 4x4
+template struct GE::Math::TMat<4, 4, float>;
+template GE::Math::TMat<4, 4, float> GE::Math::TMat<4, 4, float>::operator*
+    <4>(const GE::Math::TMat<4, 4, float>&) const;
+// 2x2 double
+template struct GE::Math::TMat<2, 2, double>;
+template GE::Math::TMat<2, 2, double> GE::Math::TMat<2, 2, double>::operator*
+    <2>(const GE::Math::TMat<2, 2, double>&) const;
+// 3x3 double
+template struct GE::Math::TMat<3, 3, double>;
+template GE::Math::TMat<3, 3, double> GE::Math::TMat<3, 3, double>::operator*
+    <3>(const GE::Math::TMat<3, 3, double>&) const;
+// 4x4 double
+template struct GE::Math::TMat<4, 4, double>;
+template GE::Math::TMat<4, 4, double> GE::Math::TMat<4, 4, double>::operator*
+    <4>(const GE::Math::TMat<4, 4, double>&) const;
