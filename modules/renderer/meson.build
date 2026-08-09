@@ -1,6 +1,7 @@
 lib_name = meson.project_name() + '_' + 'renderer'
 
 logger_dep = dependency('goiaba_logger')
+math_dep = dependency('goiaba_math')
 
 vk_loader_dep = dependency('vulkan')
 vk_headers_dep = dependency('VulkanHeaders')
@@ -12,6 +13,7 @@ renderer_lib_inc = include_directories('include')
 renderer_lib_deps = declare_dependency(
     dependencies: [
         logger_dep,
+        math_dep,
         vk_loader_dep,
         vk_headers_dep,
         vk_vma_hpp_dep,
