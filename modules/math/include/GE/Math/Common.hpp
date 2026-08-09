@@ -85,10 +85,10 @@ template <std::floating_point T>
     return t * t * (T(3) - T(2) * t);
 }
 
-template <typename T>
+template <std::floating_point T>
 [[nodiscard]] constexpr T Radians(T degrees) {
-    constexpr auto defautDegree = 180;
-    return degrees * (Pi<T> / T(defautDegree));
+    constexpr auto defaultDegree = 180;
+    return degrees * (Pi<T> / T(defaultDegree));
 }
 
 template <typename T>
