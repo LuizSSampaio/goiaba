@@ -82,9 +82,10 @@ struct TQuat {
         T len = Length();
         return len == T(0) ? *this : *this / len;
     }
-    [[nodiscard]] constexpr TQuat Inverse() const {
-        return Conjugate() / LengthSquared();
-    }
+[[nodiscard]] constexpr TQuat Inverse() const {
+    const T len2 = LengthSquared();
+    return len2 == T(0) ? *this : (Conjugate() / len2);
+}
 
     // -- Complex ops: declared here, defined in src/Quaternion.cpp via glm
     // ----- Hamilton product. this * rhs.
