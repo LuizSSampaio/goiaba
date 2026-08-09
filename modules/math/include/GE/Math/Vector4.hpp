@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <cstddef>
-#include <type_traits>
 
 #include "GE/Math/Common.hpp"
 #include "GE/Math/Vector3.hpp"
@@ -22,19 +21,23 @@ struct TVec4 {
     explicit constexpr TVec4(T scalar)
         : x(scalar), y(scalar), z(scalar), w(scalar) {}
     template <Numeric U>
-    explicit constexpr TVec4(const TVec4<U>& o)
-        : x(static_cast<T>(o.x)),
-          y(static_cast<T>(o.y)),
-          z(static_cast<T>(o.z)),
-          w(static_cast<T>(o.w)) {}
+    explicit constexpr TVec4(const TVec4<U>& o_)
+        : x(static_cast<T>(o_.x)),
+          y(static_cast<T>(o_.y)),
+          z(static_cast<T>(o_.z)),
+          w(static_cast<T>(o_.w)) {}
     constexpr TVec4(const TVec3<T>& v, T w_)  // NOLINT implicit vec3->vec4
         : x(v.x), y(v.y), z(v.z), w(w_) {}
 
-    [[nodiscard]] constexpr T& operator[](std::size_t i) {
-        return i == 0 ? x : i == 1 ? y : i == 2 ? z : w;
+    [[nodiscard]] constexpr T& operator[](std::size_t index) {
+        constexpr auto noY = index == 2 ? z : w;
+        constexpr auto noX = index == 1 ? y : noY;
+        return index == 0 ? x : noX;
     }
-    [[nodiscard]] constexpr const T& operator[](std::size_t i) const {
-        return i == 0 ? x : i == 1 ? y : i == 2 ? z : w;
+    [[nodiscard]] constexpr const T& operator[](std::size_t index) const {
+        constexpr auto noY = index == 2 ? z : w;
+        constexpr auto noX = index == 1 ? y : noY;
+        return index == 0 ? x : noX;
     }
 
     [[nodiscard]] constexpr TVec3<T> Xyz() const { return {x, y, z}; }
@@ -42,74 +45,75 @@ struct TVec4 {
     [[nodiscard]] constexpr TVec4 operator+() const { return *this; }
     [[nodiscard]] constexpr TVec4 operator-() const { return {-x, -y, -z, -w}; }
 
-    [[nodiscard]] constexpr TVec4 operator+(TVec4 r) const {
-        return {x + r.x, y + r.y, z + r.z, w + r.w};
+    [[nodiscard]] constexpr TVec4 operator+(TVec4 rhs) const {
+        return {x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w};
     }
-    [[nodiscard]] constexpr TVec4 operator-(TVec4 r) const {
-        return {x - r.x, y - r.y, z - r.z, w - r.w};
+    [[nodiscard]] constexpr TVec4 operator-(TVec4 rhs) const {
+        return {x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w};
     }
-    [[nodiscard]] constexpr TVec4 operator*(TVec4 r) const {
-        return {x * r.x, y * r.y, z * r.z, w * r.w};
+    [[nodiscard]] constexpr TVec4 operator*(TVec4 rhs) const {
+        return {x * rhs.x, y * rhs.y, z * rhs.z, w * rhs.w};
     }
-    [[nodiscard]] constexpr TVec4 operator/(TVec4 r) const {
-        return {x / r.x, y / r.y, z / r.z, w / r.w};
+    [[nodiscard]] constexpr TVec4 operator/(TVec4 rhs) const {
+        return {x / rhs.x, y / rhs.y, z / rhs.z, w / rhs.w};
     }
-    [[nodiscard]] constexpr TVec4 operator*(T s) const {
-        return {x * s, y * s, z * s, w * s};
+    [[nodiscard]] constexpr TVec4 operator*(T val) const {
+        return {x * val, y * val, z * val, w * val};
     }
-    [[nodiscard]] constexpr TVec4 operator/(T s) const {
-        return {x / s, y / s, z / s, w / s};
-    }
-
-    constexpr TVec4& operator+=(TVec4 r) {
-        x += r.x;
-        y += r.y;
-        z += r.z;
-        w += r.w;
-        return *this;
-    }
-    constexpr TVec4& operator-=(TVec4 r) {
-        x -= r.x;
-        y -= r.y;
-        z -= r.z;
-        w -= r.w;
-        return *this;
-    }
-    constexpr TVec4& operator*=(TVec4 r) {
-        x *= r.x;
-        y *= r.y;
-        z *= r.z;
-        w *= r.w;
-        return *this;
-    }
-    constexpr TVec4& operator/=(TVec4 r) {
-        x /= r.x;
-        y /= r.y;
-        z /= r.z;
-        w /= r.w;
-        return *this;
-    }
-    constexpr TVec4& operator*=(T s) {
-        x *= s;
-        y *= s;
-        z *= s;
-        w *= s;
-        return *this;
-    }
-    constexpr TVec4& operator/=(T s) {
-        x /= s;
-        y /= s;
-        z /= s;
-        w /= s;
-        return *this;
+    [[nodiscard]] constexpr TVec4 operator/(T val) const {
+        return {x / val, y / val, z / val, w / val};
     }
 
-    [[nodiscard]] friend constexpr bool operator==(TVec4 a, TVec4 b) {
-        return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+    constexpr TVec4& operator+=(TVec4 rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        w += rhs.w;
+        return *this;
+    }
+    constexpr TVec4& operator-=(TVec4 rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        w -= rhs.w;
+        return *this;
+    }
+    constexpr TVec4& operator*=(TVec4 rhs) {
+        x *= rhs.x;
+        y *= rhs.y;
+        z *= rhs.z;
+        w *= rhs.w;
+        return *this;
+    }
+    constexpr TVec4& operator/=(TVec4 rhs) {
+        x /= rhs.x;
+        y /= rhs.y;
+        z /= rhs.z;
+        w /= rhs.w;
+        return *this;
+    }
+    constexpr TVec4& operator*=(T val) {
+        x *= val;
+        y *= val;
+        z *= val;
+        w *= val;
+        return *this;
+    }
+    constexpr TVec4& operator/=(T val) {
+        x /= val;
+        y /= val;
+        z /= val;
+        w /= val;
+        return *this;
     }
 
-    [[nodiscard]] constexpr T Dot(TVec4 r) const {
-        return x * r.x + y * r.y + z * r.z + w * r.w;
+    [[nodiscard]] friend constexpr bool operator==(TVec4 vecA, TVec4 vecB) {
+        return vecA.x == vecB.x && vecA.y == vecB.y && vecA.z == vecB.z &&
+               vecA.w == vecB.w;
+    }
+
+    [[nodiscard]] constexpr T Dot(TVec4 rhs) const {
+        return x * rhs.x + y * rhs.y + z * rhs.z + w * rhs.w;
     }
     [[nodiscard]] constexpr T LengthSquared() const { return Dot(*this); }
 
@@ -121,49 +125,49 @@ struct TVec4 {
 };
 
 template <Numeric T>
-[[nodiscard]] constexpr TVec4<T> operator*(T s, TVec4<T> v) {
-    return v * s;
+[[nodiscard]] constexpr TVec4<T> operator*(T val, TVec4<T> vec) {
+    return vec * val;
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr T Dot(TVec4<T> a, TVec4<T> b) {
-    return a.Dot(b);
+[[nodiscard]] constexpr T Dot(TVec4<T> vecA, TVec4<T> vecB) {
+    return vecA.Dot(vecB);
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr T LengthSquared(TVec4<T> v) {
-    return v.LengthSquared();
+[[nodiscard]] constexpr T LengthSquared(TVec4<T> vec) {
+    return vec.LengthSquared();
 }
 
 template <Numeric T>
-[[nodiscard]] T Length(TVec4<T> v) {
-    return v.Length();
+[[nodiscard]] T Length(TVec4<T> vec) {
+    return vec.Length();
 }
 
 template <Numeric T>
-[[nodiscard]] T Distance(TVec4<T> a, TVec4<T> b) {
-    return (a - b).Length();
+[[nodiscard]] T Distance(TVec4<T> vecA, TVec4<T> vecB) {
+    return (vecA - vecB).Length();
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr TVec4<T> Lerp(TVec4<T> a, TVec4<T> b, T t) {
-    return a + (b - a) * t;
+[[nodiscard]] constexpr TVec4<T> Lerp(TVec4<T> vecA, TVec4<T> vecB, T time) {
+    return vecA + (vecB - vecA) * time;
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr TVec4<T> Min(TVec4<T> a, TVec4<T> b) {
-    return {Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z), Min(a.w, b.w)};
+[[nodiscard]] constexpr TVec4<T> Min(TVec4<T> vecA, TVec4<T> vecB) {
+    return {Min(vecA.x, vecB.x), Min(vecA.y, vecB.y), Min(vecA.z, vecB.z), Min(vecA.w, vecB.w)};
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr TVec4<T> Max(TVec4<T> a, TVec4<T> b) {
-    return {Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z), Max(a.w, b.w)};
+[[nodiscard]] constexpr TVec4<T> Max(TVec4<T> vecA, TVec4<T> vecB) {
+    return {Max(vecA.x, vecB.x), Max(vecA.y, vecB.y), Max(vecA.z, vecB.z), Max(vecA.w, vecB.w)};
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr TVec4<T> Clamp(TVec4<T> v, TVec4<T> lo, TVec4<T> hi) {
-    return {Clamp(v.x, lo.x, hi.x), Clamp(v.y, lo.y, hi.y),
-            Clamp(v.z, lo.z, hi.z), Clamp(v.w, lo.w, hi.w)};
+[[nodiscard]] constexpr TVec4<T> Clamp(TVec4<T> vec, TVec4<T> lo, TVec4<T> hi) {
+    return {Clamp(vec.x, lo.x, hi.x), Clamp(vec.y, lo.y, hi.y),
+            Clamp(vec.z, lo.z, hi.z), Clamp(vec.w, lo.w, hi.w)};
 }
 
 using Vec4 = TVec4<float>;
