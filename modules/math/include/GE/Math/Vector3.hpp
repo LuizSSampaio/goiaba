@@ -23,12 +23,12 @@ struct TVec3 {
           z(static_cast<T>(o_.z)) {}
 
     [[nodiscard]] constexpr T& operator[](std::size_t index) {
-        constexpr auto notX = (index == 1 ? y : z);
-        return index == 0 ? x : notX;
+        if (index == 0) return x;
+        return index == 1 ? y : z;
     }
     [[nodiscard]] constexpr const T& operator[](std::size_t index) const {
-        constexpr auto notX = (index == 1 ? y : z);
-        return index == 0 ? x : notX;
+        if (index == 0) return x;
+        return index == 1 ? y : z;
     }
 
     [[nodiscard]] constexpr TVec3 operator+() const { return *this; }

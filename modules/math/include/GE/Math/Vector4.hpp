@@ -30,14 +30,14 @@ struct TVec4 {
         : x(v.x), y(v.y), z(v.z), w(w_) {}
 
     [[nodiscard]] constexpr T& operator[](std::size_t index) {
-        constexpr auto noY = index == 2 ? z : w;
-        constexpr auto noX = index == 1 ? y : noY;
-        return index == 0 ? x : noX;
+        if (index == 0) return x;
+        if (index == 1) return y;
+        return index == 2 ? z : w;
     }
     [[nodiscard]] constexpr const T& operator[](std::size_t index) const {
-        constexpr auto noY = index == 2 ? z : w;
-        constexpr auto noX = index == 1 ? y : noY;
-        return index == 0 ? x : noX;
+        if (index == 0) return x;
+        if (index == 1) return y;
+        return index == 2 ? z : w;
     }
 
     [[nodiscard]] constexpr TVec3<T> Xyz() const { return {x, y, z}; }
@@ -156,12 +156,14 @@ template <Numeric T>
 
 template <Numeric T>
 [[nodiscard]] constexpr TVec4<T> Min(TVec4<T> vecA, TVec4<T> vecB) {
-    return {Min(vecA.x, vecB.x), Min(vecA.y, vecB.y), Min(vecA.z, vecB.z), Min(vecA.w, vecB.w)};
+    return {Min(vecA.x, vecB.x), Min(vecA.y, vecB.y), Min(vecA.z, vecB.z),
+            Min(vecA.w, vecB.w)};
 }
 
 template <Numeric T>
 [[nodiscard]] constexpr TVec4<T> Max(TVec4<T> vecA, TVec4<T> vecB) {
-    return {Max(vecA.x, vecB.x), Max(vecA.y, vecB.y), Max(vecA.z, vecB.z), Max(vecA.w, vecB.w)};
+    return {Max(vecA.x, vecB.x), Max(vecA.y, vecB.y), Max(vecA.z, vecB.z),
+            Max(vecA.w, vecB.w)};
 }
 
 template <Numeric T>
