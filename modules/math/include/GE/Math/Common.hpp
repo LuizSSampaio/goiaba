@@ -79,7 +79,7 @@ template <typename T>
     return val < edge ? T(0) : T(1);
 }
 
-template <typename T>
+template <std::floating_point T>
 [[nodiscard]] constexpr T Smoothstep(T edge0, T edge1, T val) {
     T t = Clamp((val - edge0) / (edge1 - edge0), T(0), T(1));
     return t * t * (T(3) - T(2) * t);
