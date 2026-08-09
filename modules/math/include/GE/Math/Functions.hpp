@@ -1,8 +1,8 @@
 #pragma once
 
-#include "GE/Math/Common.hpp"
-#include "GE/Math/Matrix.hpp"
-#include "GE/Math/Vector3.hpp"
+#include <GE/Math/Common.hpp>
+#include <GE/Math/Matrix.hpp>
+#include <GE/Math/Vector3.hpp>
 
 namespace GE::Math {
 
@@ -24,15 +24,15 @@ template <Numeric T>
 
 /// Translate a (column-major) 4x4 matrix by `v`.
 template <Numeric T>
-[[nodiscard]] TMat<4, 4, T> Translate(TMat<4, 4, T> m, TVec3<T> v);
+[[nodiscard]] TMat<4, 4, T> Translate(TMat<4, 4, T> mat, TVec3<T> vec);
 
 /// Scale a (column-major) 4x4 matrix by `v`.
 template <Numeric T>
-[[nodiscard]] TMat<4, 4, T> Scale(TMat<4, 4, T> m, TVec3<T> v);
+[[nodiscard]] TMat<4, 4, T> Scale(TMat<4, 4, T> mat, TVec3<T> vec);
 
 /// Rotate a (column-major) 4x4 matrix by `angleRadians` around `axis`.
 template <Numeric T>
-[[nodiscard]] TMat<4, 4, T> Rotate(TMat<4, 4, T> m, T angleRadians,
+[[nodiscard]] TMat<4, 4, T> Rotate(TMat<4, 4, T> mat, T angleRadians,
                                    TVec3<T> axis);
 
 }  // namespace GE::Math

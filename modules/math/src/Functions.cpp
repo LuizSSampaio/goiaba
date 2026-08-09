@@ -1,5 +1,4 @@
-#include "GE/Math/Functions.hpp"
-
+#include <GE/Math/Functions.hpp>
 #include <glm/ext/matrix_clip_space.hpp>  // perspectiveRH_ZO, orthoRH_ZO
 #include <glm/ext/matrix_transform.hpp>   // lookAtRH, translate, rotate, scale
 
