@@ -5,15 +5,14 @@
 // zero-cost bit_cast converters between GE::Math types and glm types plus
 // compile-time layout-compatibility guards.
 
+#include <GE/Math/Matrix.hpp>
+#include <GE/Math/Quaternion.hpp>
+#include <GE/Math/Vector2.hpp>
+#include <GE/Math/Vector3.hpp>
+#include <GE/Math/Vector4.hpp>
 #include <bit>
 #include <cstddef>
 #include <type_traits>
-
-#include "GE/Math/Matrix.hpp"
-#include "GE/Math/Quaternion.hpp"
-#include "GE/Math/Vector2.hpp"
-#include "GE/Math/Vector3.hpp"
-#include "GE/Math/Vector4.hpp"
 
 // glm type headers (granular).
 #include <glm/ext/quaternion_double.hpp>
@@ -39,50 +38,61 @@ namespace GE::Math::detail {
 // such misconfiguration a hard, obvious compile error.
 // ---------------------------------------------------------------------------
 
-// Trivially copyable + standard-layout on our side (glm side only needs
-// trivially-copyable + same size/alignment for bit_cast).
-#define GE_MATH_ASSERT_VEC(elt, N, Ge)                       \
-    static_assert(sizeof(Ge) == sizeof(glm::vec<N, elt>));   \
-    static_assert(alignof(Ge) == alignof(glm::vec<N, elt>)); \
-    static_assert(std::is_trivially_copyable_v<Ge>);         \
+// Template guards: each returns `true` (after its inner static_asserts pass),
+// so a `static_assert(Guard<...>())` at namespace scope forces instantiation
+// and surfaces a hard compile error on any layout mismatch. Ge is the GE::Math
+// type; Gm is the glm type it must be bit_cast-compatible with.
+
+// Vectors: trivially copyable + standard-layout on our side.
+template <typename Ge, typename Gm>
+constexpr bool AssertVecLayout() {
+    static_assert(sizeof(Ge) == sizeof(Gm));
+    static_assert(alignof(Ge) == alignof(Gm));
+    static_assert(std::is_trivially_copyable_v<Ge>);
     static_assert(std::is_standard_layout_v<Ge>);
+    return true;
+}
 
-#define GE_MATH_ASSERT_MAT(C, R, elt)                                        \
-    static_assert(sizeof(TMat<C, R, elt>) == sizeof(glm::mat<C, R, elt>));   \
-    static_assert(alignof(TMat<C, R, elt>) == alignof(glm::mat<C, R, elt>)); \
-    static_assert(std::is_trivially_copyable_v<TMat<C, R, elt>>);
+// Matrices: trivially copyable (offsetof-free checks; no standard-layout req).
+template <typename Ge, typename Gm>
+constexpr bool AssertMatLayout() {
+    static_assert(sizeof(Ge) == sizeof(Gm));
+    static_assert(alignof(Ge) == alignof(Gm));
+    static_assert(std::is_trivially_copyable_v<Ge>);
+    return true;
+}
 
-#define GE_MATH_ASSERT_QUAT(elt)                                  \
-    static_assert(sizeof(TQuat<elt>) == sizeof(glm::qua<elt>));   \
-    static_assert(alignof(TQuat<elt>) == alignof(glm::qua<elt>)); \
-    static_assert(std::is_trivially_copyable_v<TQuat<elt>>);
+// Quaternions: trivially copyable.
+template <typename Ge, typename Gm>
+constexpr bool AssertQuatLayout() {
+    static_assert(sizeof(Ge) == sizeof(Gm));
+    static_assert(alignof(Ge) == alignof(Gm));
+    static_assert(std::is_trivially_copyable_v<Ge>);
+    return true;
+}
 
-GE_MATH_ASSERT_VEC(float, 2, TVec2<float>)
-GE_MATH_ASSERT_VEC(float, 3, TVec3<float>)
-GE_MATH_ASSERT_VEC(float, 4, TVec4<float>)
-GE_MATH_ASSERT_VEC(double, 2, TVec2<double>)
-GE_MATH_ASSERT_VEC(double, 3, TVec3<double>)
-GE_MATH_ASSERT_VEC(double, 4, TVec4<double>)
+static_assert(AssertVecLayout<TVec2<float>, glm::vec2>());
+static_assert(AssertVecLayout<TVec3<float>, glm::vec3>());
+static_assert(AssertVecLayout<TVec4<float>, glm::vec4>());
+static_assert(AssertVecLayout<TVec2<double>, glm::dvec2>());
+static_assert(AssertVecLayout<TVec3<double>, glm::dvec3>());
+static_assert(AssertVecLayout<TVec4<double>, glm::dvec4>());
 
-GE_MATH_ASSERT_MAT(2, 2, float)
-GE_MATH_ASSERT_MAT(3, 2, float)
-GE_MATH_ASSERT_MAT(2, 3, float)
-GE_MATH_ASSERT_MAT(4, 2, float)
-GE_MATH_ASSERT_MAT(2, 4, float)
-GE_MATH_ASSERT_MAT(3, 3, float)
-GE_MATH_ASSERT_MAT(4, 3, float)
-GE_MATH_ASSERT_MAT(3, 4, float)
-GE_MATH_ASSERT_MAT(4, 4, float)
-GE_MATH_ASSERT_MAT(2, 2, double)
-GE_MATH_ASSERT_MAT(3, 3, double)
-GE_MATH_ASSERT_MAT(4, 4, double)
+static_assert(AssertMatLayout<TMat<2, 2, float>, glm::mat<2, 2, float>>());
+static_assert(AssertMatLayout<TMat<3, 2, float>, glm::mat<3, 2, float>>());
+static_assert(AssertMatLayout<TMat<2, 3, float>, glm::mat<2, 3, float>>());
+static_assert(AssertMatLayout<TMat<4, 2, float>, glm::mat<4, 2, float>>());
+static_assert(AssertMatLayout<TMat<2, 4, float>, glm::mat<2, 4, float>>());
+static_assert(AssertMatLayout<TMat<3, 3, float>, glm::mat<3, 3, float>>());
+static_assert(AssertMatLayout<TMat<4, 3, float>, glm::mat<4, 3, float>>());
+static_assert(AssertMatLayout<TMat<3, 4, float>, glm::mat<3, 4, float>>());
+static_assert(AssertMatLayout<TMat<4, 4, float>, glm::mat<4, 4, float>>());
+static_assert(AssertMatLayout<TMat<2, 2, double>, glm::mat<2, 2, double>>());
+static_assert(AssertMatLayout<TMat<3, 3, double>, glm::mat<3, 3, double>>());
+static_assert(AssertMatLayout<TMat<4, 4, double>, glm::mat<4, 4, double>>());
 
-GE_MATH_ASSERT_QUAT(float)
-GE_MATH_ASSERT_QUAT(double)
-
-#undef GE_MATH_ASSERT_VEC
-#undef GE_MATH_ASSERT_MAT
-#undef GE_MATH_ASSERT_QUAT
+static_assert(AssertQuatLayout<TQuat<float>, glm::qua<float>>());
+static_assert(AssertQuatLayout<TQuat<double>, glm::qua<double>>());
 
 // Member-order sanity (our side is standard-layout, so offsetof is safe).
 static_assert(offsetof(TVec3<float>, z) == 2 * sizeof(float));
@@ -97,19 +107,19 @@ static_assert(offsetof(BridgeMat4f, cols) == 0);  // column-major
 // above). ToGlm<glm::vec3>(ge); FromGlm<GE::Math::Vec3>(glmVec).
 // ---------------------------------------------------------------------------
 template <typename G, typename E>
-[[nodiscard]] inline G ToGlm(const E& e) noexcept {
+[[nodiscard]] inline G ToGlm(const E& mathEl) noexcept {
     static_assert(sizeof(G) == sizeof(E) && alignof(G) == alignof(E));
     static_assert(std::is_trivially_copyable_v<G> &&
                   std::is_trivially_copyable_v<E>);
-    return std::bit_cast<G>(e);
+    return std::bit_cast<G>(mathEl);
 }
 
 template <typename E, typename G>
-[[nodiscard]] inline E FromGlm(const G& g) noexcept {
+[[nodiscard]] inline E FromGlm(const G& glmEl) noexcept {
     static_assert(sizeof(G) == sizeof(E) && alignof(G) == alignof(E));
     static_assert(std::is_trivially_copyable_v<G> &&
                   std::is_trivially_copyable_v<E>);
-    return std::bit_cast<E>(g);
+    return std::bit_cast<E>(glmEl);
 }
 
 }  // namespace GE::Math::detail
