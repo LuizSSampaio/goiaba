@@ -1,10 +1,9 @@
 #pragma once
 
+#include <GE/Math/Common.hpp>
+#include <GE/Math/Matrix.hpp>
 #include <cmath>
 #include <type_traits>
-
-#include "GE/Math/Common.hpp"
-#include "GE/Math/Matrix.hpp"
 
 namespace GE::Math {
 
@@ -25,54 +24,55 @@ struct TQuat {
     constexpr TQuat() = default;
     constexpr TQuat(T x_, T y_, T z_, T w_) : x(x_), y(y_), z(z_), w(w_) {}
     template <Numeric U>
-    explicit constexpr TQuat(const TQuat<U>& o)
-        : x(static_cast<T>(o.x)),
-          y(static_cast<T>(o.y)),
-          z(static_cast<T>(o.z)),
-          w(static_cast<T>(o.w)) {}
+    explicit constexpr TQuat(const TQuat<U>& o_)
+        : x(static_cast<T>(o_.x)),
+          y(static_cast<T>(o_.y)),
+          z(static_cast<T>(o_.z)),
+          w(static_cast<T>(o_.w)) {}
 
     [[nodiscard]] constexpr TQuat operator+() const { return *this; }
     [[nodiscard]] constexpr TQuat operator-() const { return {-x, -y, -z, -w}; }
-    [[nodiscard]] constexpr TQuat operator+(TQuat r) const {
-        return {x + r.x, y + r.y, z + r.z, w + r.w};
+    [[nodiscard]] constexpr TQuat operator+(TQuat rhs) const {
+        return {x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w};
     }
-    [[nodiscard]] constexpr TQuat operator-(TQuat r) const {
-        return {x - r.x, y - r.y, z - r.z, w - r.w};
+    [[nodiscard]] constexpr TQuat operator-(TQuat rhs) const {
+        return {x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w};
     }
-    [[nodiscard]] constexpr TQuat operator*(T s) const {
-        return {x * s, y * s, z * s, w * s};
+    [[nodiscard]] constexpr TQuat operator*(T val) const {
+        return {x * val, y * val, z * val, w * val};
     }
-    [[nodiscard]] constexpr TQuat operator/(T s) const {
-        return {x / s, y / s, z / s, w / s};
+    [[nodiscard]] constexpr TQuat operator/(T val) const {
+        return {x / val, y / val, z / val, w / val};
     }
-    constexpr TQuat& operator+=(TQuat r) {
-        x += r.x;
-        y += r.y;
-        z += r.z;
-        w += r.w;
+    constexpr TQuat& operator+=(TQuat rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        w += rhs.w;
         return *this;
     }
-    constexpr TQuat& operator-=(TQuat r) {
-        x -= r.x;
-        y -= r.y;
-        z -= r.z;
-        w -= r.w;
+    constexpr TQuat& operator-=(TQuat rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        w -= rhs.w;
         return *this;
     }
-    constexpr TQuat& operator*=(T s) {
-        x *= s;
-        y *= s;
-        z *= s;
-        w *= s;
+    constexpr TQuat& operator*=(T val) {
+        x *= val;
+        y *= val;
+        z *= val;
+        w *= val;
         return *this;
     }
 
-    [[nodiscard]] friend constexpr bool operator==(TQuat a, TQuat b) {
-        return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+    [[nodiscard]] friend constexpr bool operator==(TQuat quatA, TQuat quatB) {
+        return quatA.x == quatB.x && quatA.y == quatB.y && quatA.z == quatB.z &&
+               quatA.w == quatB.w;
     }
 
-    [[nodiscard]] constexpr T Dot(TQuat r) const {
-        return x * r.x + y * r.y + z * r.z + w * r.w;
+    [[nodiscard]] constexpr T Dot(TQuat rhs) const {
+        return x * rhs.x + y * rhs.y + z * rhs.z + w * rhs.w;
     }
     [[nodiscard]] constexpr T LengthSquared() const { return Dot(*this); }
     [[nodiscard]] constexpr TQuat Conjugate() const { return {-x, -y, -z, w}; }
@@ -90,13 +90,13 @@ struct TQuat {
     // ----- Hamilton product. this * rhs.
     [[nodiscard]] TQuat operator*(TQuat rhs) const;
     // Rotate a 3-vector by this quaternion.
-    [[nodiscard]] TVec3<T> operator*(TVec3<T> v) const { return Rotate(v); }
-    [[nodiscard]] TVec3<T> Rotate(TVec3<T> v) const;
+    [[nodiscard]] TVec3<T> operator*(TVec3<T> vec) const { return Rotate(vec); }
+    [[nodiscard]] TVec3<T> Rotate(TVec3<T> vec) const;
 
     [[nodiscard]] static TQuat FromAxisAngle(TVec3<T> axis, T angleRadians);
     [[nodiscard]] static TQuat FromEulerAngles(TVec3<T> eulerRadians);
-    [[nodiscard]] static TQuat FromMat3(const TMat<3, 3, T>& m);
-    [[nodiscard]] static TQuat FromMat4(const TMat<4, 4, T>& m);
+    [[nodiscard]] static TQuat FromMat3(const TMat<3, 3, T>& mat);
+    [[nodiscard]] static TQuat FromMat4(const TMat<4, 4, T>& mat);
     [[nodiscard]] TMat<3, 3, T> ToMat3() const;
     [[nodiscard]] TMat<4, 4, T> ToMat4() const;
     [[nodiscard]] T Angle() const;
@@ -104,38 +104,38 @@ struct TQuat {
 };
 
 template <Numeric T>
-[[nodiscard]] constexpr TQuat<T> operator*(T s, TQuat<T> q) {
-    return q * s;
+[[nodiscard]] constexpr TQuat<T> operator*(T val, TQuat<T> quat) {
+    return quat * val;
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr T Dot(TQuat<T> a, TQuat<T> b) {
-    return a.Dot(b);
+[[nodiscard]] constexpr T Dot(TQuat<T> quatA, TQuat<T> quatB) {
+    return quatA.Dot(quatB);
 }
 
 template <Numeric T>
-[[nodiscard]] constexpr T LengthSquared(TQuat<T> q) {
-    return q.LengthSquared();
+[[nodiscard]] constexpr T LengthSquared(TQuat<T> quat) {
+    return quat.LengthSquared();
 }
 
 template <Numeric T>
-[[nodiscard]] T Length(TQuat<T> q) {
-    return q.Length();
+[[nodiscard]] T Length(TQuat<T> quat) {
+    return quat.Length();
 }
 
 /// Spherical linear interpolation between two quaternions.
 template <Numeric T>
-[[nodiscard]] TQuat<T> Slerp(TQuat<T> a, TQuat<T> b, T t);
+[[nodiscard]] TQuat<T> Slerp(TQuat<T> quatA, TQuat<T> quatB, T time);
 
 /// Normalized linear interpolation (cheaper than Slerp, often good enough).
 template <Numeric T>
-[[nodiscard]] TQuat<T> Nlerp(TQuat<T> a, TQuat<T> b, T t) {
-    return (a + (b - a) * t).Normalized();
+[[nodiscard]] TQuat<T> Nlerp(TQuat<T> quatA, TQuat<T> quatB, T time) {
+    return (quatA + (quatB - quatA) * time).Normalized();
 }
 
 template <Numeric T>
-[[nodiscard]] TQuat<T> Lerp(TQuat<T> a, TQuat<T> b, T t) {
-    return a + (b - a) * t;
+[[nodiscard]] TQuat<T> Lerp(TQuat<T> quatA, TQuat<T> quatB, T time) {
+    return quatA + (quatB - quatA) * time;
 }
 
 using Quat = TQuat<float>;

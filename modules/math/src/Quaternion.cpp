@@ -1,5 +1,4 @@
-#include "GE/Math/Quaternion.hpp"
-
+#include <GE/Math/Quaternion.hpp>
 #include <glm/ext/quaternion_common.hpp>         // glm::slerp
 #include <glm/ext/quaternion_trigonometric.hpp>  // angleAxis, angle, axis
 #include <glm/gtc/quaternion.hpp>  // mat3_cast, mat4_cast, quat_cast
@@ -15,9 +14,9 @@ TQuat<T> TQuat<T>::operator*(TQuat rhs) const {
 }
 
 template <Numeric T>
-TVec3<T> TQuat<T>::Rotate(TVec3<T> v) const {
+TVec3<T> TQuat<T>::Rotate(TVec3<T> vec) const {
     return detail::FromGlm<TVec3<T>>(detail::ToGlm<glm::qua<T>>(*this) *
-                                     detail::ToGlm<glm::vec<3, T>>(v));
+                                     detail::ToGlm<glm::vec<3, T>>(vec));
 }
 
 template <Numeric T>
@@ -33,15 +32,15 @@ TQuat<T> TQuat<T>::FromEulerAngles(TVec3<T> eulerRadians) {
 }
 
 template <Numeric T>
-TQuat<T> TQuat<T>::FromMat3(const TMat<3, 3, T>& m) {
+TQuat<T> TQuat<T>::FromMat3(const TMat<3, 3, T>& mat) {
     return detail::FromGlm<TQuat<T>>(
-        glm::quat_cast(detail::ToGlm<glm::mat<3, 3, T>>(m)));
+        glm::quat_cast(detail::ToGlm<glm::mat<3, 3, T>>(mat)));
 }
 
 template <Numeric T>
-TQuat<T> TQuat<T>::FromMat4(const TMat<4, 4, T>& m) {
+TQuat<T> TQuat<T>::FromMat4(const TMat<4, 4, T>& mat) {
     return detail::FromGlm<TQuat<T>>(
-        glm::quat_cast(detail::ToGlm<glm::mat<4, 4, T>>(m)));
+        glm::quat_cast(detail::ToGlm<glm::mat<4, 4, T>>(mat)));
 }
 
 template <Numeric T>
@@ -68,9 +67,9 @@ TVec3<T> TQuat<T>::Axis() const {
 }
 
 template <Numeric T>
-TQuat<T> Slerp(TQuat<T> a, TQuat<T> b, T t) {
+TQuat<T> Slerp(TQuat<T> quatA, TQuat<T> quatB, T time) {
     return detail::FromGlm<TQuat<T>>(glm::slerp(
-        detail::ToGlm<glm::qua<T>>(a), detail::ToGlm<glm::qua<T>>(b), t));
+        detail::ToGlm<glm::qua<T>>(quatA), detail::ToGlm<glm::qua<T>>(quatB), time));
 }
 
 }  // namespace GE::Math
