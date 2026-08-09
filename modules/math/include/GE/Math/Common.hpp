@@ -91,10 +91,10 @@ template <std::floating_point T>
     return degrees * (Pi<T> / T(defaultDegree));
 }
 
-template <typename T>
+template <std::floating_point T>
 [[nodiscard]] constexpr T Degrees(T radians) {
-    constexpr auto defautDegree = 180;
-    return radians * (T(defautDegree) / Pi<T>);
+    constexpr auto defaultDegree = 180;
+    return radians * (T(defaultDegree) / Pi<T>);
 }
 
 template <Numeric T>
