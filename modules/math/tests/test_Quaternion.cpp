@@ -1,4 +1,5 @@
 #include <doctest/doctest.h>
+#include <cmath>
 
 #include <glm/ext/quaternion_common.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
