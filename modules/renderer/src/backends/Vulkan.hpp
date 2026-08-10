@@ -37,6 +37,8 @@ public:
         FailedDepthImageCreation,
         FailedDepthImageViewCreation,
         FailedShaderDataBufferCreation,
+        FailedSemaphoreCreation,
+        FailedFenceCreation,
     };
 
     struct Extensions {
@@ -81,6 +83,16 @@ private:
         nullptr,
         nullptr,
     };
+    std::array<vk::raii::Fence, maxFramesInFlight> fences_ = {
+        nullptr,
+        nullptr,
+    };
+    std::array<vk::raii::Semaphore, maxFramesInFlight>
+        imageAcquiredSemaphores_ = {
+            nullptr,
+            nullptr,
+        };
+    std::vector<vk::raii::Semaphore> renderCompleteSemaphores_;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
@@ -110,6 +122,9 @@ private:
         const vk::raii::PhysicalDevice& physicalDevice);
 
     std::expected<void, Error> CreateShaderDataBuffers(
+        const vk::raii::Device& device);
+
+    std::expected<void, Error> CreateSyncronizationObjects(
         const vk::raii::Device& device);
 };
 }  // namespace GE::Render::Backends

@@ -78,6 +78,11 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         return std::unexpected(shaderDataBuffersRes.error());
     }
 
+    auto syncObjectRes = this->CreateSyncronizationObjects(this->device_);
+    if (!syncObjectRes.has_value()) {
+        return std::unexpected(syncObjectRes.error());
+    }
+
     return {};
 }
 
@@ -457,6 +462,40 @@ std::expected<void, Vulkan::Error> Vulkan::CreateShaderDataBuffers(
         };
         this->shaderDataBuffers_[i].deviceAddress =
             device.getBufferAddress(bufferBdaInfo);
+    }
+
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::CreateSyncronizationObjects(
+    const vk::raii::Device& device) {
+    vk::SemaphoreCreateInfo semaphoreCI = {};
+    vk::FenceCreateInfo fenceCI = {
+        .flags = vk::FenceCreateFlagBits::eSignaled,
+    };
+
+    for (auto i = 0; i < Vulkan::maxFramesInFlight; i++) {
+        auto semaphoreRes = device.createSemaphore(semaphoreCI);
+        if (!semaphoreRes.has_value()) {
+            return std::unexpected(Vulkan::FailedSemaphoreCreation);
+        }
+        this->imageAcquiredSemaphores_[i] = std::move(semaphoreRes.value());
+
+        auto fenceRes = device.createFence(fenceCI);
+        if (!fenceRes.has_value()) {
+            return std::unexpected(Vulkan::FailedFenceCreation);
+        }
+        this->fences_[i] = std::move(fenceRes.value());
+    }
+
+    this->renderCompleteSemaphores_.clear();
+    this->renderCompleteSemaphores_.reserve(this->swapchainImages_.size());
+    for (auto i = 0; i < this->swapchainImages_.size(); i++) {
+        auto semaphoreRes = device.createSemaphore(semaphoreCI);
+        if (!semaphoreRes.has_value()) {
+            return std::unexpected(Vulkan::FailedSemaphoreCreation);
+        }
+        this->renderCompleteSemaphores_.push_back(std::move(semaphoreRes.value()));
     }
 
     return {};
