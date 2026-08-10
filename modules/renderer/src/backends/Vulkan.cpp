@@ -450,6 +450,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateShaderDataBuffers(
             return std::unexpected(
                 Vulkan::Error::FailedShaderDataBufferCreation);
         }
+        this->shaderDataBuffers_[i].buffer = std::move(bufferRes.value());
 
         vk::BufferDeviceAddressInfo bufferBdaInfo = {
             .buffer = this->shaderDataBuffers_[i].buffer,

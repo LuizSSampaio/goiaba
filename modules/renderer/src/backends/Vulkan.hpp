@@ -49,9 +49,7 @@ public:
     };
 
     struct ShaderDataBuffer {
-        vma::raii::Allocation alloc = nullptr;
-        vma::AllocationInfo allocInfo = {};
-        vk::raii::Buffer buffer = nullptr;
+        vma::raii::Buffer buffer = nullptr;
         vk::DeviceAddress deviceAddress = {};
     };
 
