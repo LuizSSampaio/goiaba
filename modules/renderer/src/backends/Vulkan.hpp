@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GE/Backend.hpp>
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -35,6 +36,7 @@ public:
         FailedToGetSwapchainImages,
         FailedDepthImageCreation,
         FailedDepthImageViewCreation,
+        FailedShaderDataBufferCreation,
     };
 
     struct Extensions {
@@ -46,6 +48,13 @@ public:
         }
     };
 
+    struct ShaderDataBuffer {
+        vma::raii::Allocation alloc = nullptr;
+        vma::AllocationInfo allocInfo = {};
+        vk::raii::Buffer buffer = nullptr;
+        vk::DeviceAddress deviceAddress = {};
+    };
+
     Vulkan() = default;
     ~Vulkan() override = default;
 
@@ -55,6 +64,8 @@ public:
                                     Extensions& extensions);
 
 private:
+    static constexpr uint32_t maxFramesInFlight = 2;
+
     vk::raii::Context context_;
     vk::raii::Instance instance_ = nullptr;
     vk::raii::DebugUtilsMessengerEXT debugMessenger_ = nullptr;
@@ -67,6 +78,11 @@ private:
     vma::raii::Allocator alloc_ = nullptr;
     vma::raii::Image depthImage_ = nullptr;
     vk::raii::ImageView depthImageView_ = nullptr;
+    std::array<ShaderDataBuffer, maxFramesInFlight> shaderDataBuffers_;
+    std::array<vk::raii::CommandBuffer, maxFramesInFlight> commandBuffers_ = {
+        nullptr,
+        nullptr,
+    };
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
@@ -94,5 +110,8 @@ private:
     std::expected<void, Error> DepthAttachment(
         const std::shared_ptr<Window>& window, const vk::raii::Device& device,
         const vk::raii::PhysicalDevice& physicalDevice);
+
+    std::expected<void, Error> CreateShaderDataBuffers(
+        const vk::raii::Device& device);
 };
 }  // namespace GE::Render::Backends

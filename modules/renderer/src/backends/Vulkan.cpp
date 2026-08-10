@@ -9,6 +9,8 @@
 #include <iterator>
 #include <utility>
 
+#include "../ShaderData.hpp"
+
 using namespace GE::Render::Backends;
 
 #ifndef NDEBUG
@@ -418,6 +420,38 @@ std::expected<void, Vulkan::Error> Vulkan::DepthAttachment(
 
     this->depthImage_ = std::move(depthImageRes.value());
     this->depthImageView_ = std::move(depthImageViewRes.value());
+
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::CreateShaderDataBuffers(
+    const vk::raii::Device& device) {
+    for (auto i = 0; i < Vulkan::maxFramesInFlight; i++) {
+        vk::BufferCreateInfo bufferCI = {
+            .size = sizeof(ShaderData),
+            .usage = vk::BufferUsageFlagBits::eShaderDeviceAddress,
+        };
+
+        vma::AllocationCreateInfo bufferAllocCI = {
+            .flags =
+                vma::AllocationCreateFlagBits::eHostAccessSequentialWrite |
+                vma::AllocationCreateFlagBits::eHostAccessAllowTransferInstead |
+                vma::AllocationCreateFlagBits::eMapped,
+            .usage = vma::MemoryUsage::eAuto,
+        };
+
+        auto bufferRes = this->alloc_.createBuffer(bufferCI, bufferAllocCI);
+        if (!bufferRes.has_value()) {
+            return std::unexpected(
+                Vulkan::Error::FailedShaderDataBufferCreation);
+        }
+
+        vk::BufferDeviceAddressInfo bufferBdaInfo = {
+            .buffer = this->shaderDataBuffers_[i].buffer,
+        };
+        this->shaderDataBuffers_[i].deviceAddress =
+            device.getBufferAddress(bufferBdaInfo);
+    }
 
     return {};
 }
