@@ -73,6 +73,11 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         return std::unexpected(depthAttachRes.error());
     }
 
+    auto shaderDataBuffersRes = this->CreateShaderDataBuffers(this->device_);
+    if (!shaderDataBuffersRes.has_value()) {
+        return std::unexpected(shaderDataBuffersRes.error());
+    }
+
     return {};
 }
 
