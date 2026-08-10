@@ -260,7 +260,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateAllocator(
     const vk::raii::PhysicalDevice& physicalDevice,
     const vk::raii::Device& device) {
     vma::AllocatorCreateInfo allocatorCI{
-        .flags = {},
+        .flags = vma::AllocatorCreateFlagBits::eBufferDeviceAddress,
         .physicalDevice = physicalDevice,
     };
     auto allocRes = vma::raii::createAllocator(instance, device, allocatorCI);
