@@ -39,6 +39,8 @@ public:
         FailedShaderDataBufferCreation,
         FailedSemaphoreCreation,
         FailedFenceCreation,
+        FailedCommandPoolCreation,
+        FailedCommandBufferCreation,
     };
 
     struct Extensions {
@@ -93,6 +95,7 @@ private:
             nullptr,
         };
     std::vector<vk::raii::Semaphore> renderCompleteSemaphores_;
+    vk::raii::CommandPool commandPool_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
@@ -100,7 +103,7 @@ private:
 
     std::expected<vk::raii::PhysicalDevice, Error> SelectPhysicalDevice();
 
-    std::expected<void, Error> CreateQueueAndDevice(
+    std::expected<uint32_t, Error> CreateQueueAndDevice(
         const vk::raii::PhysicalDevice& physicalDevice);
 
     std::expected<void, Error> CreateAllocator(
@@ -126,5 +129,8 @@ private:
 
     std::expected<void, Error> CreateSyncronizationObjects(
         const vk::raii::Device& device);
+
+    std::expected<void, Error> CreateCommandPool(const vk::raii::Device& device,
+                                                 uint32_t queueFamilyIndex);
 };
 }  // namespace GE::Render::Backends

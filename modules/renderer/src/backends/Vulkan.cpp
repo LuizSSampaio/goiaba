@@ -83,6 +83,12 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         return std::unexpected(syncObjectRes.error());
     }
 
+    auto commandRes =
+        this->CreateCommandPool(this->device_, queueAndDeviceRes.value());
+    if (!commandRes.has_value()) {
+        return std::unexpected(commandRes.error());
+    }
+
     return {};
 }
 
@@ -192,7 +198,7 @@ Vulkan::SelectPhysicalDevice() {
     return std::move(physicalDevices[*bestIndex]);
 }
 
-std::expected<void, Vulkan::Error> Vulkan::CreateQueueAndDevice(
+std::expected<uint32_t, Vulkan::Error> Vulkan::CreateQueueAndDevice(
     // Start Queue creation
     const vk::raii::PhysicalDevice& physicalDevice) {
     auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
@@ -257,7 +263,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateQueueAndDevice(
 
     // Finish queue creation
     this->queue_ = this->device_.getQueue(graphicsIndex, 0);
-    return {};
+    return graphicsIndex;
 }
 
 std::expected<void, Vulkan::Error> Vulkan::CreateAllocator(
@@ -495,7 +501,37 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSyncronizationObjects(
         if (!semaphoreRes.has_value()) {
             return std::unexpected(Vulkan::FailedSemaphoreCreation);
         }
-        this->renderCompleteSemaphores_.push_back(std::move(semaphoreRes.value()));
+        this->renderCompleteSemaphores_.push_back(
+            std::move(semaphoreRes.value()));
+    }
+
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::CreateCommandPool(
+    const vk::raii::Device& device, uint32_t queueFamilyIndex) {
+    vk::CommandPoolCreateInfo commandPoolCI = {
+        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .queueFamilyIndex = queueFamilyIndex,
+    };
+
+    auto cPoolRes = device.createCommandPool(commandPoolCI);
+    if (!cPoolRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedCommandPoolCreation);
+    }
+
+    vk::CommandBufferAllocateInfo cbAllocCI = {
+        .commandPool = cPoolRes.value(),
+        .commandBufferCount = Vulkan::maxFramesInFlight,
+    };
+
+    auto cbAllocRes = device.allocateCommandBuffers(cbAllocCI);
+    if (!cbAllocRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedCommandBufferCreation);
+    }
+
+    for (auto i = 0; i < Vulkan::maxFramesInFlight; i++) {
+        this->commandBuffers_[i] = std::move(cbAllocRes.value()[i]);
     }
 
     return {};
