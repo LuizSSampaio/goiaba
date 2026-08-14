@@ -24,7 +24,7 @@ renderer_lib_deps = declare_dependency(
 
 renderer_lib = library(
     lib_name,
-    ['src/Renderer.cpp', 'src/backends/Vulkan.cpp', 'src/SDLWindow.cpp'],
+    ['src/Renderer.cpp', 'src/backends/Vulkan/Vulkan.cpp', 'src/SDLWindow.cpp'],
     dependencies: renderer_lib_deps,
 )
 

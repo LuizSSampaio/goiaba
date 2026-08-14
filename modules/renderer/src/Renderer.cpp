@@ -10,7 +10,7 @@
 #include <GE/Logger.hpp>
 #include <string>
 
-#include "./backends/Vulkan.hpp"
+#include "./backends/Vulkan/Vulkan.hpp"
 #include "GE/Renderer.hpp"
 
 using namespace GE::Render;
