@@ -41,6 +41,7 @@ public:
         FailedFenceCreation,
         FailedCommandPoolCreation,
         FailedCommandBufferCreation,
+        FailedShaderModuleCreation,
     };
 
     struct Extensions {
@@ -132,5 +133,11 @@ private:
 
     std::expected<void, Error> CreateCommandPool(const vk::raii::Device& device,
                                                  uint32_t queueFamilyIndex);
+
+    std::expected<void, Error> CreateGraphicsPipeline(
+        const vk::raii::Device& device);
+
+    static std::expected<vk::raii::ShaderModule, Error> CreateShaderModule(
+        const vk::raii::Device& device);
 };
 }  // namespace GE::Render::Backends

@@ -9,7 +9,9 @@
 #include <iterator>
 #include <utility>
 
+#include "GE/Shader.hpp"
 #include "src/ShaderData.hpp"
+#include "vulkan/vulkan.hpp"
 
 using namespace GE::Render::Backends;
 
@@ -535,4 +537,46 @@ std::expected<void, Vulkan::Error> Vulkan::CreateCommandPool(
     }
 
     return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::CreateGraphicsPipeline(
+    const vk::raii::Device& device) {
+    auto shaderModuleRes = Vulkan::CreateShaderModule(device);
+    if (!shaderModuleRes.has_value()) {
+        return std::unexpected(shaderModuleRes.error());
+    }
+
+    vk::PipelineShaderStageCreateInfo vertShaderStageCI = {
+        .stage = vk::ShaderStageFlagBits::eVertex,
+        .module = shaderModuleRes.value(),
+        .pName = "vertMain",
+    };
+
+    vk::PipelineShaderStageCreateInfo fragShaderStageCI{
+        .stage = vk::ShaderStageFlagBits::eFragment,
+        .module = shaderModuleRes.value(),
+        .pName = "fragMain",
+    };
+
+    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = {
+        vertShaderStageCI,
+        fragShaderStageCI,
+    };
+}
+
+std::expected<vk::raii::ShaderModule, Vulkan::Error> Vulkan::CreateShaderModule(
+    const vk::raii::Device& device) {
+    auto shader = GE::Render::Shader("./samples/shader.spv");
+
+    vk::ShaderModuleCreateInfo shaderModuleCI = {
+        .codeSize = shader.data()->size() * sizeof(char),
+        .pCode = reinterpret_cast<const uint32_t*>(shader.data()->data()),
+    };
+
+    auto shaderModuleRes = device.createShaderModule(shaderModuleCI);
+    if (!shaderModuleRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedShaderModuleCreation);
+    }
+
+    return std::move(shaderModuleRes.value());
 }
