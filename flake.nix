@@ -71,6 +71,7 @@
               vulkan-loader
               vulkan-tools
               vulkan-tools-lunarg
+              shader-slang
             ];
 
             buildInputs = runtimeLibs;
