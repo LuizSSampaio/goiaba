@@ -42,6 +42,7 @@ public:
         FailedCommandPoolCreation,
         FailedCommandBufferCreation,
         FailedShaderModuleCreation,
+        FailedPipelineLayoutCreation,
     };
 
     struct Extensions {
@@ -75,6 +76,8 @@ private:
     vk::raii::SurfaceKHR surface_ = nullptr;
     vk::raii::Device device_ = nullptr;
     vk::raii::Queue queue_ = nullptr;
+    vk::Extent2D swapchainExtent_;
+    vk::SurfaceFormatKHR swapchainSurfaceFormat_;
     vk::raii::SwapchainKHR swapchain_ = nullptr;
     std::vector<vk::Image> swapchainImages_;
     std::vector<vk::raii::ImageView> swapchainImageViews_;

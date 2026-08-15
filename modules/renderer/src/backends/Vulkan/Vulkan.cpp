@@ -319,22 +319,21 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
         return std::unexpected(Vulkan::NoSurfaceFormat);
     }
 
-    vk::SurfaceFormatKHR chosen = formats[0];
+    this->swapchainSurfaceFormat_ = formats[0];
     for (const auto& format : formats) {
         if (format.format == vk::Format::eB8G8R8A8Srgb &&
             format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-            chosen = format;
+            this->swapchainSurfaceFormat_ = format;
             break;
         }
     }
 
     const auto& caps = surfaceCapsRes.value();
-    vk::Extent2D swapchainExtent;
     constexpr auto waylandDefaultWidth = 0xFFFFFFFF;
     if (caps.currentExtent.width != waylandDefaultWidth) {
-        swapchainExtent = caps.currentExtent;
+        this->swapchainExtent_ = caps.currentExtent;
     } else {
-        swapchainExtent = vk::Extent2D{
+        this->swapchainExtent_ = vk::Extent2D{
             .width = std::clamp(window->width(), caps.minImageExtent.width,
                                 caps.maxImageExtent.width),
             .height = std::clamp(window->height(), caps.minImageExtent.height,
@@ -345,12 +344,12 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
     vk::SwapchainCreateInfoKHR swapchainCI = {
         .surface = surface,
         .minImageCount = surfaceCapsRes.value().minImageCount,
-        .imageFormat = chosen.format,
-        .imageColorSpace = chosen.colorSpace,
+        .imageFormat = this->swapchainSurfaceFormat_.format,
+        .imageColorSpace = this->swapchainSurfaceFormat_.colorSpace,
         .imageExtent =
             {
-                .width = swapchainExtent.width,
-                .height = swapchainExtent.height,
+                .width = this->swapchainExtent_.width,
+                .height = this->swapchainExtent_.height,
             },
         .imageArrayLayers = 1,
         .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
@@ -562,6 +561,113 @@ std::expected<void, Vulkan::Error> Vulkan::CreateGraphicsPipeline(
         vertShaderStageCI,
         fragShaderStageCI,
     };
+
+    std::vector<vk::DynamicState> dynamicStates = {
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eScissor,
+    };
+
+    vk::PipelineDynamicStateCreateInfo dynamicStateCI = {
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+        .pDynamicStates = dynamicStates.data(),
+    };
+
+    vk::PipelineVertexInputStateCreateInfo vertexInputCI;
+    vk::PipelineInputAssemblyStateCreateInfo inputAssemblyCI = {
+        .topology = vk::PrimitiveTopology::eTriangleList,
+    };
+
+    vk::Viewport viewport = {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(this->swapchainExtent_.width),
+        .height = static_cast<float>(this->swapchainExtent_.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+
+    vk::Rect2D scisssor = {
+        .offset =
+            vk::Offset2D{
+                .x = 0,
+                .y = 0,
+            },
+        .extent = this->swapchainExtent_,
+    };
+
+    vk::PipelineViewportStateCreateInfo viewportStateCI = {
+        .viewportCount = 1,
+        .scissorCount = 1,
+    };
+
+    vk::PipelineRasterizationStateCreateInfo rasterizationStateCI = {
+        .depthClampEnable = vk::False,
+        .rasterizerDiscardEnable = vk::False,
+        .polygonMode = vk::PolygonMode::eFill,
+        .cullMode = vk::CullModeFlagBits::eBack,
+        .frontFace = vk::FrontFace::eClockwise,
+        .depthBiasEnable = vk::False,
+        .lineWidth = 1.0f,
+    };
+
+    vk::PipelineMultisampleStateCreateInfo multisamplingStateCI = {
+        .rasterizationSamples = vk::SampleCountFlagBits::e1,
+        .sampleShadingEnable = vk::False,
+    };
+
+    vk::PipelineDepthStencilStateCreateInfo depthStencilStateCI = {
+        .depthTestEnable = vk::True,
+        .depthWriteEnable = vk::True,
+        .depthCompareOp = vk::CompareOp::eLessOrEqual,
+    };
+
+    vk::PipelineColorBlendAttachmentState colorBlendAttachment{
+        .blendEnable = vk::False,
+        .colorWriteMask =
+            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+            vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+    };
+
+    vk::PipelineColorBlendStateCreateInfo colorBlendingCI = {
+        .logicOpEnable = vk::False,
+        .logicOp = vk::LogicOp::eCopy,
+        .attachmentCount = 1,
+        .pAttachments = &colorBlendAttachment,
+    };
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutCI = {
+        .setLayoutCount = 0,
+        .pushConstantRangeCount = 0,
+    };
+    auto pipelineLayout = device.createPipelineLayout(pipelineLayoutCI);
+    if (!pipelineLayout.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedPipelineLayoutCreation);
+    }
+
+    vk::StructureChain<vk::GraphicsPipelineCreateInfo,
+                       vk::PipelineRenderingCreateInfo>
+        pipelineCIChain = {
+            {
+                .stageCount = 2,
+                .pStages = shaderStages.data(),
+                .pVertexInputState = &vertexInputCI,
+                .pInputAssemblyState = &inputAssemblyCI,
+                .pViewportState = &viewportStateCI,
+                .pRasterizationState = &rasterizationStateCI,
+                .pMultisampleState = &multisamplingStateCI,
+                .pColorBlendState = &colorBlendingCI,
+                .pDynamicState = &dynamicStateCI,
+                .layout = std::move(pipelineLayout.value()),
+                .renderPass = nullptr,
+            },
+            {
+                .colorAttachmentCount = 1,
+                .pColorAttachmentFormats =
+                    &this->swapchainSurfaceFormat_.format,
+            },
+        };
+
+    return {};
 }
 
 std::expected<vk::raii::ShaderModule, Vulkan::Error> Vulkan::CreateShaderModule(
