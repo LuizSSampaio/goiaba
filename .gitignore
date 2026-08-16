@@ -6,6 +6,8 @@
 build/
 subprojects/**/
 !subprojects/*.wrap
+!subprojects/packagefiles/
+!subprojects/packagefiles/**
 
 # Documentation
 docs/_build/

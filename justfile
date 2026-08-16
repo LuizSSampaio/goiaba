@@ -7,12 +7,12 @@ build:
     meson compile -C {{ builddir }}
 
 run:
-    ./{{ builddir }}/{{ binName }}
+    ./{{ builddir }}/samples/{{ binName }}
 
 brun: build run
 
 setup:
-    meson setup {{ builddir }}
+    meson setup {{ builddir }} -Dbuildtype=debugoptimized
 
 test:
     meson test -C {{ builddir }}
