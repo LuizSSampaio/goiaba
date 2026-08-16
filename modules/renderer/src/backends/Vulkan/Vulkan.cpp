@@ -865,5 +865,34 @@ void Vulkan::RenderPass() {
         // TODO
         return;
     }
+
+    vk::SemaphoreSubmitInfo waitSemaphoreInfo = {
+        .semaphore = this->imageAcquiredSemaphores_[this->frameIndex_],
+        .stageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+    };
+
+    vk::CommandBufferSubmitInfo cbSubmitInfo = {
+        .commandBuffer = cb,
+    };
+
+    vk::SemaphoreSubmitInfo signalSemaphoreInfo = {
+        .semaphore = this->renderCompleteSemaphores_[nextImageRes.value],
+        .stageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+    };
+
+    vk::SubmitInfo2 submitInfo = {
+        .waitSemaphoreInfoCount = 1,
+        .pWaitSemaphoreInfos = &waitSemaphoreInfo,
+        .commandBufferInfoCount = 1,
+        .pCommandBufferInfos = &cbSubmitInfo,
+        .signalSemaphoreInfoCount = 1,
+        .pSignalSemaphoreInfos = &signalSemaphoreInfo,
+    };
+
+    if (!this->queue_.submit2(submitInfo, this->fences_[this->frameIndex_])) {
+        // TODO
+        return;
+    }
+
     this->frameIndex_ = (this->frameIndex_ + 1) % Vulkan::maxFramesInFlight;
 }
