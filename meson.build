@@ -5,4 +5,5 @@ project(
 )
 
 subdir('modules')
+subdir('editor')
 subdir('samples')
