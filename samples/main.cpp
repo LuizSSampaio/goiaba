@@ -11,7 +11,9 @@ int main() {
         return 1;
     }
 
-    renderer.Run();
+    while (true) {
+        renderer.Run();
+    }
 
     GE::Logger::Shutdown();
     return 0;

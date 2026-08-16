@@ -68,9 +68,6 @@ std::expected<void, Renderer::Error> Renderer::InitVulkan() {
     return {};
 }
 
-void Renderer::Run() {
-    while (true) {
-    };
-}
+void Renderer::Run() { this->backend_->RenderPass(); }
 
 std::shared_ptr<Window> Renderer::window() { return this->window_; }

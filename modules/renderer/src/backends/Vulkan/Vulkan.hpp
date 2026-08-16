@@ -68,8 +68,11 @@ public:
                                     const std::string& engineName,
                                     Extensions& extensions);
 
+    void RenderPass() override;
+
 private:
     static constexpr uint32_t maxFramesInFlight = 2;
+    uint32_t frameIndex_ = 0;
 
     vk::raii::Context context_;
     vk::raii::Instance instance_ = nullptr;

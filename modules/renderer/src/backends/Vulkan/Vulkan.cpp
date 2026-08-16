@@ -703,3 +703,28 @@ std::expected<vk::raii::ShaderModule, Vulkan::Error> Vulkan::CreateShaderModule(
 
     return std::move(shaderModuleRes.value());
 }
+
+void Vulkan::RenderPass() {
+    auto waitFencesRes = this->device_.waitForFences(
+        {this->fences_[this->frameIndex_]}, vk::True, UINT32_MAX);
+    if (waitFencesRes != vk::Result::eSuccess) {
+        // TODO
+        return;
+    }
+
+    auto resetFenceRes =
+        this->device_.resetFences({this->fences_[this->frameIndex_]});
+    if (!resetFenceRes.has_value()) {
+        // TODO
+        return;
+    }
+
+    auto nextImageRes = this->swapchain_.acquireNextImage(
+        UINT32_MAX, this->imageAcquiredSemaphores_[this->frameIndex_]);
+    if (!nextImageRes.has_value()) {
+        // TODO
+        return;
+    }
+
+    this->frameIndex_ = (this->frameIndex_ + 1) % Vulkan::maxFramesInFlight;
+}
