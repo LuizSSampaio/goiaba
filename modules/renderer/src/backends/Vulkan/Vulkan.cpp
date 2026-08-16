@@ -586,24 +586,6 @@ std::expected<void, Vulkan::Error> Vulkan::CreateGraphicsPipeline(
         .topology = vk::PrimitiveTopology::eTriangleList,
     };
 
-    vk::Viewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = static_cast<float>(this->swapchainExtent_.width),
-        .height = static_cast<float>(this->swapchainExtent_.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-
-    vk::Rect2D scisssor = {
-        .offset =
-            vk::Offset2D{
-                .x = 0,
-                .y = 0,
-            },
-        .extent = this->swapchainExtent_,
-    };
-
     vk::PipelineViewportStateCreateInfo viewportStateCI = {
         .viewportCount = 1,
         .scissorCount = 1,
@@ -726,5 +708,140 @@ void Vulkan::RenderPass() {
         return;
     }
 
+    auto& cb = this->commandBuffers_[this->frameIndex_];
+    if (!cb.reset()) {
+        // TODO
+        return;
+    }
+
+    vk::CommandBufferBeginInfo cbBI = {
+        .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+    };
+    if (!cb.begin(cbBI)) {
+        // TODO
+        return;
+    }
+
+    std::array<vk::ImageMemoryBarrier2, 2> outputBarriers = {
+        vk::ImageMemoryBarrier2{
+            .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+            .srcAccessMask = vk::AccessFlagBits2::eNone,
+            .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+            .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentRead |
+                             vk::AccessFlagBits2::eColorAttachmentWrite,
+            .oldLayout = vk::ImageLayout::eUndefined,
+            .newLayout = vk::ImageLayout::eAttachmentOptimal,
+            .image = this->swapchainImages_[nextImageRes.value],
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .levelCount = 1,
+                    .layerCount = 1,
+                },
+        },
+        vk::ImageMemoryBarrier2{
+            .srcStageMask = vk::PipelineStageFlagBits2::eLateFragmentTests,
+            .srcAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+            .dstAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+            .oldLayout = vk::ImageLayout::eUndefined,
+            .newLayout = vk::ImageLayout::eAttachmentOptimal,
+            .image = this->depthImage_,
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eDepth |
+                                  vk::ImageAspectFlagBits::eStencil,
+                    .levelCount = 1,
+                    .layerCount = 1,
+                },
+        },
+    };
+
+    vk::DependencyInfo barrierDependencyInfo = {
+        .imageMemoryBarrierCount = 2,
+        .pImageMemoryBarriers = outputBarriers.data(),
+    };
+    cb.pipelineBarrier2(barrierDependencyInfo);
+
+    vk::RenderingAttachmentInfo colorAttachmentInfo = {
+        .imageView = this->swapchainImageViews_[nextImageRes.value],
+        .imageLayout = vk::ImageLayout::eAttachmentOptimal,
+        .loadOp = vk::AttachmentLoadOp::eClear,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .clearValue = vk::ClearColorValue(0.0f, 0.0f, 0.2f, 1.0f),
+    };
+
+    vk::RenderingAttachmentInfo depthAttachmentInfo = {
+        .imageView = this->depthImageView_,
+        .imageLayout = vk::ImageLayout::eAttachmentOptimal,
+        .loadOp = vk::AttachmentLoadOp::eClear,
+        .storeOp = vk::AttachmentStoreOp::eDontCare,
+        .clearValue = vk::ClearDepthStencilValue(1.0f, 0.0f),
+    };
+
+    vk::RenderingInfo renderingInfo = {
+        .renderArea =
+            {
+                .extent = this->swapchainExtent_,
+            },
+        .layerCount = 1,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &colorAttachmentInfo,
+        .pDepthAttachment = &depthAttachmentInfo,
+    };
+    cb.beginRendering(renderingInfo);
+
+    vk::Viewport viewport = {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(this->swapchainExtent_.width),
+        .height = static_cast<float>(this->swapchainExtent_.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+    cb.setViewport(0, viewport);
+
+    vk::Rect2D scisssor = {
+        .offset =
+            vk::Offset2D{
+                .x = 0,
+                .y = 0,
+            },
+        .extent = this->swapchainExtent_,
+    };
+    cb.setScissor(0, scisssor);
+
+    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, this->graphicsPipeline_);
+
+    cb.draw(3, 1, 0, 0);
+
+    cb.endRendering();
+
+    vk::ImageMemoryBarrier2 barrierPresent = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+        .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+        .dstAccessMask = vk::AccessFlagBits2::eNone,
+        .oldLayout = vk::ImageLayout::eAttachmentOptimal,
+        .newLayout = vk::ImageLayout::ePresentSrcKHR,
+        .image = this->swapchainImages_[nextImageRes.value],
+        .subresourceRange =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .levelCount = 1,
+                .layerCount = 1,
+            },
+    };
+
+    vk::DependencyInfo barrierPresentDependencyInfo = {
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &barrierPresent,
+    };
+    cb.pipelineBarrier2(barrierPresentDependencyInfo);
+
+    if (!cb.end()) {
+        // TODO
+        return;
+    }
     this->frameIndex_ = (this->frameIndex_ + 1) % Vulkan::maxFramesInFlight;
 }
