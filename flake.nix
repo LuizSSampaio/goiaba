@@ -72,6 +72,8 @@
               vulkan-tools
               vulkan-tools-lunarg
               shader-slang
+
+              qt6.qtbase
             ];
 
             buildInputs = runtimeLibs;
