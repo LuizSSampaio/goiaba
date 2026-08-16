@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GE/Math.hpp>
+#include <array>
 #include <cstdint>
 
 struct ShaderData {
