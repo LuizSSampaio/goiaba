@@ -451,7 +451,7 @@ std::expected<void, Vulkan::Error> Vulkan::DepthAttachment(
 
 std::expected<void, Vulkan::Error> Vulkan::CreateShaderDataBuffers(
     const vk::raii::Device& device) {
-    for (auto i = 0; i < Vulkan::maxFramesInFlight; i++) {
+    for (uint32_t i = 0; i < Vulkan::maxFramesInFlight; i++) {
         vk::BufferCreateInfo bufferCI = {
             .size = sizeof(ShaderData),
             .usage = vk::BufferUsageFlagBits::eShaderDeviceAddress,
@@ -489,7 +489,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSyncronizationObjects(
         .flags = vk::FenceCreateFlagBits::eSignaled,
     };
 
-    for (auto i = 0; i < Vulkan::maxFramesInFlight; i++) {
+    for (uint32_t i = 0; i < Vulkan::maxFramesInFlight; i++) {
         auto semaphoreRes = device.createSemaphore(semaphoreCI);
         if (!semaphoreRes.has_value()) {
             return std::unexpected(Vulkan::FailedSemaphoreCreation);
@@ -505,7 +505,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSyncronizationObjects(
 
     this->renderCompleteSemaphores_.clear();
     this->renderCompleteSemaphores_.reserve(this->swapchainImages_.size());
-    for (auto i = 0; i < this->swapchainImages_.size(); i++) {
+    for (uint32_t i = 0; i < this->swapchainImages_.size(); i++) {
         auto semaphoreRes = device.createSemaphore(semaphoreCI);
         if (!semaphoreRes.has_value()) {
             return std::unexpected(Vulkan::FailedSemaphoreCreation);
@@ -539,7 +539,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateCommandPool(
         return std::unexpected(Vulkan::Error::FailedCommandBufferCreation);
     }
 
-    for (auto i = 0; i < Vulkan::maxFramesInFlight; i++) {
+    for (uint32_t i = 0; i < Vulkan::maxFramesInFlight; i++) {
         this->commandBuffers_[i] = std::move(cbAllocRes.value()[i]);
     }
 
