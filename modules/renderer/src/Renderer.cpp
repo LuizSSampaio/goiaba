@@ -68,6 +68,12 @@ std::expected<void, Renderer::Error> Renderer::InitVulkan() {
     return {};
 }
 
-void Renderer::Run() { this->backend_->RenderPass(); }
+void Renderer::Run() {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+    }
+
+    this->backend_->RenderPass();
+}
 
 std::shared_ptr<Window> Renderer::window() { return this->window_; }
