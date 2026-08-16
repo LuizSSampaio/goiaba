@@ -895,4 +895,21 @@ void Vulkan::RenderPass() {
     }
 
     this->frameIndex_ = (this->frameIndex_ + 1) % Vulkan::maxFramesInFlight;
+
+    vk::Semaphore waitSemaphore =
+        this->renderCompleteSemaphores_[nextImageRes.value];
+    vk::SwapchainKHR swapchain = this->swapchain_;
+
+    vk::PresentInfoKHR presentInfo = {
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &waitSemaphore,
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain,
+        .pImageIndices = &nextImageRes.value,
+    };
+
+    if (this->queue_.presentKHR(presentInfo) != vk::Result::eSuccess) {
+        // TODO
+        return;
+    }
 }
