@@ -34,6 +34,7 @@ public:
         FailedToGetSurfaceFormats,
         FailedSwapchainCreation,
         FailedToGetSwapchainImages,
+        FailedSwapchainImageViewCreation,
         FailedDepthImageCreation,
         FailedDepthImageViewCreation,
         FailedShaderDataBufferCreation,

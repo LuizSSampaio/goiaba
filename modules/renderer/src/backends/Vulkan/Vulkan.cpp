@@ -11,7 +11,6 @@
 
 #include "GE/Shader.hpp"
 #include "src/ShaderData.hpp"
-#include "vulkan/vulkan.hpp"
 
 using namespace GE::Render::Backends;
 
@@ -378,6 +377,29 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
     }
     this->swapchainImages_ = swapchainImagesRes.value();
 
+    std::vector<vk::raii::ImageView> views;
+    views.reserve(this->swapchainImages_.size());
+    for (auto image : this->swapchainImages_) {
+        vk::ImageViewCreateInfo viewCI = {
+            .image = image,
+            .viewType = vk::ImageViewType::e2D,
+            .format = this->swapchainSurfaceFormat_.format,
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .levelCount = 1,
+                    .layerCount = 1,
+                },
+        };
+        auto viewRes = device.createImageView(viewCI);
+        if (!viewRes.has_value()) {
+            return std::unexpected(
+                Vulkan::Error::FailedSwapchainImageViewCreation);
+        }
+        views.push_back(std::move(viewRes.value()));
+    }
+    this->swapchainImageViews_ = std::move(views);
+
     return {};
 }
 
@@ -688,7 +710,7 @@ std::expected<vk::raii::ShaderModule, Vulkan::Error> Vulkan::CreateShaderModule(
 
 void Vulkan::RenderPass() {
     auto waitFencesRes = this->device_.waitForFences(
-        {this->fences_[this->frameIndex_]}, vk::True, UINT32_MAX);
+        {this->fences_[this->frameIndex_]}, vk::True, UINT64_MAX);
     if (waitFencesRes != vk::Result::eSuccess) {
         // TODO
         return;
@@ -702,7 +724,7 @@ void Vulkan::RenderPass() {
     }
 
     auto nextImageRes = this->swapchain_.acquireNextImage(
-        UINT32_MAX, this->imageAcquiredSemaphores_[this->frameIndex_]);
+        UINT64_MAX, this->imageAcquiredSemaphores_[this->frameIndex_]);
     if (!nextImageRes.has_value()) {
         // TODO
         return;
