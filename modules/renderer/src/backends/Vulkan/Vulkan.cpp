@@ -91,6 +91,11 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         return std::unexpected(commandRes.error());
     }
 
+    auto pipelineRes = this->CreateGraphicsPipeline(this->device_);
+    if (!pipelineRes.has_value()) {
+        return std::unexpected(pipelineRes.error());
+    }
+
     return {};
 }
 
@@ -225,15 +230,18 @@ std::expected<uint32_t, Vulkan::Error> Vulkan::CreateQueueAndDevice(
         vk::KHRSwapchainExtensionName,
     };
 
-    vk::StructureChain<vk::PhysicalDeviceFeatures2,
-                       vk::PhysicalDeviceVulkan12Features,
-                       vk::PhysicalDeviceVulkan13Features>
+    vk::StructureChain<
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
+        vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features>
         featureChain = {
             {
                 .features =
                     {
                         .samplerAnisotropy = vk::True,
                     },
+            },
+            {
+                .shaderDrawParameters = vk::True,
             },
             {
                 .descriptorIndexing = vk::True,
@@ -666,6 +674,13 @@ std::expected<void, Vulkan::Error> Vulkan::CreateGraphicsPipeline(
                     &this->swapchainSurfaceFormat_.format,
             },
         };
+
+    auto graphicsPipelineRes = device.createGraphicsPipeline(
+        nullptr, pipelineCIChain.get<vk::GraphicsPipelineCreateInfo>());
+    if (!graphicsPipelineRes.has_value()) {
+        return std::unexpected(Vulkan::Error::FailedGraphicsPipelineCreation);
+    }
+    this->graphicsPipeline_ = std::move(graphicsPipelineRes.value());
 
     return {};
 }

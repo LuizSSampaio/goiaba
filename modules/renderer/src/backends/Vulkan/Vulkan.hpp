@@ -43,6 +43,7 @@ public:
         FailedCommandBufferCreation,
         FailedShaderModuleCreation,
         FailedPipelineLayoutCreation,
+        FailedGraphicsPipelineCreation,
     };
 
     struct Extensions {
@@ -85,6 +86,7 @@ private:
     vma::raii::Image depthImage_ = nullptr;
     vk::raii::ImageView depthImageView_ = nullptr;
     std::array<ShaderDataBuffer, maxFramesInFlight> shaderDataBuffers_;
+    vk::raii::CommandPool commandPool_ = nullptr;
     std::array<vk::raii::CommandBuffer, maxFramesInFlight> commandBuffers_ = {
         nullptr,
         nullptr,
@@ -99,7 +101,7 @@ private:
             nullptr,
         };
     std::vector<vk::raii::Semaphore> renderCompleteSemaphores_;
-    vk::raii::CommandPool commandPool_ = nullptr;
+    vk::raii::Pipeline graphicsPipeline_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
