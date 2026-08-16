@@ -102,6 +102,7 @@ private:
         };
     std::vector<vk::raii::Semaphore> renderCompleteSemaphores_;
     vk::raii::Pipeline graphicsPipeline_ = nullptr;
+    vk::raii::PipelineLayout pipelineLayout_ = nullptr;
 
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,

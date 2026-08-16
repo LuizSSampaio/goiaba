@@ -15,7 +15,11 @@
 
 using namespace GE::Render;
 
-Renderer::~Renderer() { SDL_Quit(); }
+Renderer::~Renderer() {
+    this->backend_.reset();
+    this->window_.reset();
+    SDL_Quit();
+}
 
 std::expected<void, Renderer::Error> Renderer::Init(Renderer::Backend backend) {
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {

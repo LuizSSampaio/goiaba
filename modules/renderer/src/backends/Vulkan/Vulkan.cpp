@@ -528,9 +528,10 @@ std::expected<void, Vulkan::Error> Vulkan::CreateCommandPool(
     if (!cPoolRes.has_value()) {
         return std::unexpected(Vulkan::Error::FailedCommandPoolCreation);
     }
+    this->commandPool_ = std::move(cPoolRes.value());
 
     vk::CommandBufferAllocateInfo cbAllocCI = {
-        .commandPool = cPoolRes.value(),
+        .commandPool = this->commandPool_,
         .commandBufferCount = Vulkan::maxFramesInFlight,
     };
 
@@ -647,10 +648,11 @@ std::expected<void, Vulkan::Error> Vulkan::CreateGraphicsPipeline(
         .setLayoutCount = 0,
         .pushConstantRangeCount = 0,
     };
-    auto pipelineLayout = device.createPipelineLayout(pipelineLayoutCI);
-    if (!pipelineLayout.has_value()) {
+    auto pipelineLayoutRes = device.createPipelineLayout(pipelineLayoutCI);
+    if (!pipelineLayoutRes.has_value()) {
         return std::unexpected(Vulkan::Error::FailedPipelineLayoutCreation);
     }
+    this->pipelineLayout_ = std::move(pipelineLayoutRes.value());
 
     vk::StructureChain<vk::GraphicsPipelineCreateInfo,
                        vk::PipelineRenderingCreateInfo>
@@ -665,7 +667,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateGraphicsPipeline(
                 .pMultisampleState = &multisamplingStateCI,
                 .pColorBlendState = &colorBlendingCI,
                 .pDynamicState = &dynamicStateCI,
-                .layout = std::move(pipelineLayout.value()),
+                .layout = this->pipelineLayout_,
                 .renderPass = nullptr,
             },
             {
