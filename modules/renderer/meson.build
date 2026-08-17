@@ -6,7 +6,6 @@ math_dep = dependency('goiaba_math')
 vk_loader_dep = dependency('vulkan')
 vk_headers_dep = dependency('VulkanHeaders')
 vk_vma_hpp_dep = dependency('VulkanMemoryAllocator-Hpp')
-sdl3_dep = dependency('sdl3')
 
 renderer_lib_inc = include_directories('include')
 
@@ -17,7 +16,6 @@ renderer_lib_deps = declare_dependency(
         vk_loader_dep,
         vk_headers_dep,
         vk_vma_hpp_dep,
-        sdl3_dep,
     ],
     include_directories: renderer_lib_inc,
 )
@@ -27,7 +25,6 @@ renderer_lib = library(
     [
         'src/Renderer.cpp',
         'src/backends/Vulkan/Vulkan.cpp',
-        'src/SDLWindow.cpp',
         'src/Shader.cpp',
     ],
     dependencies: renderer_lib_deps,
