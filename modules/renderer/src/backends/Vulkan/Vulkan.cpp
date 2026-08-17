@@ -1,7 +1,5 @@
 #include "Vulkan.hpp"
 
-#include <SDL3/SDL_vulkan.h>
-
 #include <GE/Logger.hpp>
 #include <algorithm>
 #include <cstdint>
@@ -33,8 +31,10 @@ DebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
 #endif
 
 std::expected<void, Vulkan::Error> Vulkan::Init(
-    std::shared_ptr<SDLWindow>& window, const std::string& appName,
-    const std::string& engineName, Extensions& extensions) {
+    std::unique_ptr<GE::Platform::Window>& window,
+    std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
+    const std::string& appName, const std::string& engineName,
+    Extensions& extensions) {
     auto instanceRes = this->CreateInstance(appName, engineName, extensions);
     if (!instanceRes.has_value()) {
         return std::unexpected(instanceRes.error());
@@ -57,7 +57,8 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
         return std::unexpected(allocRes.error());
     }
 
-    auto surfaceRes = this->CreateSurface(window, this->instance_);
+    auto surfaceRes =
+        this->CreateSurface(window, surfaceFactory, this->instance_);
     if (!surfaceRes.has_value()) {
         return std::unexpected(surfaceRes.error());
     }
@@ -293,24 +294,25 @@ std::expected<void, Vulkan::Error> Vulkan::CreateAllocator(
 }
 
 std::expected<void, Vulkan::Error> Vulkan::CreateSurface(
-    const std::shared_ptr<SDLWindow>& window,
+    const std::unique_ptr<GE::Platform::Window>& window,
+    std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
     const vk::raii::Instance& instance) {
-    VkSurfaceKHR rawSurface = nullptr;
-    // TODO: Remove SDL function from vulkan backend
-    if (!SDL_Vulkan_CreateSurface(window->window(),
-                                  static_cast<VkInstance>(*instance), nullptr,
-                                  &rawSurface)) {
+    auto res = surfaceFactory->CreateSurface(
+        *window,
+        reinterpret_cast<uint64_t>(static_cast<VkInstance>(*instance)));
+    if (!res.has_value()) {
         return std::unexpected(Vulkan::Error::FailedSurfaceCreation);
     }
 
-    this->surface_ = vk::raii::SurfaceKHR(instance, rawSurface);
+    this->surface_ = vk::raii::SurfaceKHR(
+        instance, reinterpret_cast<VkSurfaceKHR>(res.value()->nativeHandle()));
 
     return {};
 }
 
 std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
-    const std::shared_ptr<Window>& window, const vk::raii::SurfaceKHR& surface,
-    const vk::raii::Device& device,
+    const std::unique_ptr<GE::Platform::Window>& window,
+    const vk::raii::SurfaceKHR& surface, const vk::raii::Device& device,
     const vk::raii::PhysicalDevice& physicalDevice) {
     auto surfaceCapsRes = physicalDevice.getSurfaceCapabilitiesKHR(surface);
     if (!surfaceCapsRes.has_value()) {
@@ -404,7 +406,8 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
 }
 
 std::expected<void, Vulkan::Error> Vulkan::DepthAttachment(
-    const std::shared_ptr<Window>& window, const vk::raii::Device& device,
+    const std::unique_ptr<GE::Platform::Window>& window,
+    const vk::raii::Device& device,
     const vk::raii::PhysicalDevice& physicalDevice) {
     std::vector<vk::Format> depthFormatList{
         vk::Format::eD32SfloatS8Uint,
