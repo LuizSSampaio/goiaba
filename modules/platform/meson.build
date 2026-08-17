@@ -13,7 +13,6 @@ platform_lib_deps = declare_dependency(
 
 platform_lib = library(
     lib_name,
-    [],
     dependencies: platform_lib_deps,
 )
 
