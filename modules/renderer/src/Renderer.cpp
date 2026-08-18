@@ -21,8 +21,11 @@ Renderer::~Renderer() {
 std::expected<void, Renderer::Error> Renderer::Init(
     Renderer::Backend backend, std::unique_ptr<GE::Platform::Window> window,
     std::unique_ptr<GE::Platform::SurfaceFactory> surfaceFactory) {
-    this->window_ = std::move(window);
+    if (!window || !surfaceFactory) {
+        return std::unexpected(Renderer::Error::FailedToInitializeBackend);
+    }
 
+    this->window_ = std::move(window);
     switch (backend) {
         case Renderer::Backend::Vulkan:
             auto vkRes = this->InitVulkan(std::move(surfaceFactory));
