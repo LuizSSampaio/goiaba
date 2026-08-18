@@ -3,9 +3,8 @@
 #include <cstdint>
 #include <expected>
 #include <string>
-#include <type_traits>
 
-namespace GE::Render {
+namespace GE::Platform {
 class Window {
 public:
     enum Error : uint8_t {
@@ -51,6 +50,8 @@ public:
 
     virtual uint32_t height() = 0;
     virtual void SetHeight(uint32_t height) = 0;
+
+    virtual void PollEvents() = 0;
 };
 
 inline Window::Flag operator|(Window::Flag lhs, Window::Flag rhs) {
@@ -64,4 +65,4 @@ inline Window::Flag operator&(Window::Flag lhs, Window::Flag rhs) {
         static_cast<std::underlying_type_t<Window::Flag>>(lhs) &
         static_cast<std::underlying_type_t<Window::Flag>>(rhs));
 }
-}  // namespace GE::Render
+}  // namespace GE::Platform

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <GE/Window.hpp>
+#include <GE/Platform/SurfaceFactory.hpp>
+#include <GE/Platform/Window.hpp>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -11,8 +12,6 @@ namespace GE::Render {
 class Renderer {
 public:
     enum Error : uint8_t {
-        FailedToInitializeSDL,
-        FailedToCreateWindow,
         FailedToInitializeBackend,
     };
 
@@ -23,15 +22,16 @@ public:
     Renderer() = default;
     ~Renderer();
 
-    std::expected<void, Error> Init(Backend backend);
+    std::expected<void, Error> Init(
+        Backend backend, std::unique_ptr<GE::Platform::Window> window,
+        std::unique_ptr<GE::Platform::SurfaceFactory> surfaceFactory);
     void Run();
-
-    std::shared_ptr<Window> window();
 
 private:
     std::unique_ptr<IBackend> backend_;
-    std::shared_ptr<Window> window_;
+    std::unique_ptr<GE::Platform::Window> window_;
 
-    std::expected<void, Error> InitVulkan();
+    std::expected<void, Error> InitVulkan(
+        std::unique_ptr<GE::Platform::SurfaceFactory> surfaceFactory);
 };
 }  // namespace GE::Render
