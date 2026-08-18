@@ -1,6 +1,8 @@
 #pragma once
 
 #include <GE/Backend.hpp>
+#include <GE/Platform/SurfaceFactory.hpp>
+#include <GE/Platform/Window.hpp>
 #include <array>
 #include <cstdint>
 #include <expected>
@@ -8,8 +10,6 @@
 #include <span>
 #include <string>
 #include <vector>
-
-#include "src/SDLWindow.hpp"
 
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_USE_STD_EXPECTED
@@ -55,6 +55,8 @@ public:
             const std::span<const char* const> view{names, count};
             this->data = std::vector<const char*>(view.begin(), view.end());
         }
+
+        Extensions(std::vector<const char*> data) : data(std::move(data)) {}
     };
 
     struct ShaderDataBuffer {
@@ -65,10 +67,11 @@ public:
     Vulkan() = default;
     ~Vulkan() override = default;
 
-    std::expected<void, Error> Init(std::shared_ptr<SDLWindow>& window,
-                                    const std::string& appName,
-                                    const std::string& engineName,
-                                    Extensions& extensions);
+    std::expected<void, Error> Init(
+        std::unique_ptr<GE::Platform::Window>& window,
+        std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
+        const std::string& appName, const std::string& engineName,
+        Extensions& extensions);
 
     void RenderPass() override;
 
@@ -124,16 +127,18 @@ private:
         const vk::raii::Device& device);
 
     std::expected<void, Error> CreateSurface(
-        const std::shared_ptr<SDLWindow>& window,
+        const std::unique_ptr<GE::Platform::Window>& window,
+        std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
         const vk::raii::Instance& instance);
 
     std::expected<void, Error> CreateSwapchain(
-        const std::shared_ptr<Window>& window,
+        const std::unique_ptr<GE::Platform::Window>& window,
         const vk::raii::SurfaceKHR& surface, const vk::raii::Device& device,
         const vk::raii::PhysicalDevice& physicalDevice);
 
     std::expected<void, Error> DepthAttachment(
-        const std::shared_ptr<Window>& window, const vk::raii::Device& device,
+        const std::unique_ptr<GE::Platform::Window>& window,
+        const vk::raii::Device& device,
         const vk::raii::PhysicalDevice& physicalDevice);
 
     std::expected<void, Error> CreateShaderDataBuffers(
