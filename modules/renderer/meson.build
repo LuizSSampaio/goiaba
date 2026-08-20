@@ -32,6 +32,17 @@ renderer_lib = library(
     dependencies: renderer_lib_deps,
 )
 
+renderer_editor_lib = library(
+    lib_name + '_editor',
+    [
+        'src/Renderer.cpp',
+        'src/backends/Vulkan/Vulkan.cpp',
+        'src/Shader.cpp',
+    ],
+    dependencies: renderer_lib_deps,
+    cpp_args: ['-DGE_VULKAN_HOST_OWNED'],
+)
+
 if get_option('tests').enabled()
     subdir('tests')
 endif
@@ -45,3 +56,13 @@ renderer_dep = declare_dependency(
 )
 
 meson.override_dependency(lib_name, renderer_dep)
+
+renderer_editor_dep = declare_dependency(
+    link_with: renderer_editor_lib,
+    dependencies: [
+        platform_dep,
+    ],
+    include_directories: renderer_lib_inc,
+)
+
+meson.override_dependency(lib_name + '_editor', renderer_editor_dep)

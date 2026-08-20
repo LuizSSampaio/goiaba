@@ -65,7 +65,7 @@ public:
     };
 
     Vulkan() = default;
-    ~Vulkan() override = default;
+    ~Vulkan() override;
 
     std::expected<void, Error> Init(
         std::unique_ptr<GE::Platform::Window>& window,
@@ -115,6 +115,8 @@ private:
     std::expected<void, Error> CreateInstance(const std::string& appName,
                                               const std::string& engineName,
                                               Extensions& extensions);
+
+    std::expected<void, Error> SetupDebugMessenger();
 
     std::expected<vk::raii::PhysicalDevice, Error> SelectPhysicalDevice();
 

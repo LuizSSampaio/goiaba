@@ -12,6 +12,13 @@
 
 using namespace GE::Render::Backends;
 
+inline constexpr bool kHostOwnsResources =
+#ifdef GE_VULKAN_HOST_OWNED
+    true;
+#else
+    false;
+#endif
+
 #ifndef NDEBUG
 namespace {
 VKAPI_ATTR vk::Bool32 VKAPI_CALL
@@ -35,9 +42,21 @@ std::expected<void, Vulkan::Error> Vulkan::Init(
     std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
     const std::string& appName, const std::string& engineName,
     Extensions& extensions) {
-    auto instanceRes = this->CreateInstance(appName, engineName, extensions);
-    if (!instanceRes.has_value()) {
-        return std::unexpected(instanceRes.error());
+    if (kHostOwnsResources) {
+        this->instance_ = vk::raii::Instance(
+            this->context_,
+            reinterpret_cast<VkInstance>(surfaceFactory->InstanceHandle()));
+    } else {
+        auto instanceRes =
+            this->CreateInstance(appName, engineName, extensions);
+        if (!instanceRes.has_value()) {
+            return std::unexpected(instanceRes.error());
+        }
+    }
+
+    auto messengerRes = this->SetupDebugMessenger();
+    if (!messengerRes.has_value()) {
+        return std::unexpected(messengerRes.error());
     }
 
     auto physicalDeviceRes = this->SelectPhysicalDevice();
@@ -130,6 +149,10 @@ std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
 
     this->instance_ = std::move(result.value());
 
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::SetupDebugMessenger() {
 #ifndef NDEBUG
     vk::DebugUtilsMessengerCreateInfoEXT messengerCI{
         .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
@@ -146,8 +169,14 @@ std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
         this->instance_.createDebugUtilsMessengerEXT(messengerCI)
             .value_or(nullptr);
 #endif
-
     return {};
+}
+
+Vulkan::~Vulkan() {
+    if constexpr (kHostOwnsResources) {
+        this->surface_.release();
+        this->instance_.release();
+    }
 }
 
 std::expected<vk::raii::PhysicalDevice, Vulkan::Error>
