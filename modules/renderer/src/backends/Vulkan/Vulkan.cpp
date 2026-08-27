@@ -12,6 +12,13 @@
 
 using namespace GE::Render::Backends;
 
+inline constexpr bool kHostOwnsResources =
+#ifdef GE_VULKAN_HOST_OWNED
+    true;
+#else
+    false;
+#endif
+
 #ifndef NDEBUG
 namespace {
 VKAPI_ATTR vk::Bool32 VKAPI_CALL
@@ -31,46 +38,60 @@ DebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
 #endif
 
 std::expected<void, Vulkan::Error> Vulkan::Init(
-    std::unique_ptr<GE::Platform::Window>& window,
+    std::shared_ptr<GE::Platform::Window>& window,
     std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
     const std::string& appName, const std::string& engineName,
     Extensions& extensions) {
-    auto instanceRes = this->CreateInstance(appName, engineName, extensions);
-    if (!instanceRes.has_value()) {
-        return std::unexpected(instanceRes.error());
+    this->window_ = window;
+
+    if (kHostOwnsResources) {
+        this->instance_ = vk::raii::Instance(
+            this->context_,
+            reinterpret_cast<VkInstance>(surfaceFactory->InstanceHandle()));
+    } else {
+        auto instanceRes =
+            this->CreateInstance(appName, engineName, extensions);
+        if (!instanceRes.has_value()) {
+            return std::unexpected(instanceRes.error());
+        }
+    }
+
+    auto messengerRes = this->SetupDebugMessenger();
+    if (!messengerRes.has_value()) {
+        return std::unexpected(messengerRes.error());
     }
 
     auto physicalDeviceRes = this->SelectPhysicalDevice();
     if (!physicalDeviceRes.has_value()) {
         return std::unexpected(physicalDeviceRes.error());
     }
+    this->physicalDevice_ = physicalDeviceRes.value();
 
-    auto queueAndDeviceRes =
-        this->CreateQueueAndDevice(physicalDeviceRes.value());
+    auto queueAndDeviceRes = this->CreateQueueAndDevice(this->physicalDevice_);
     if (!queueAndDeviceRes.has_value()) {
         return std::unexpected(queueAndDeviceRes.error());
     }
 
-    auto allocRes = this->CreateAllocator(
-        this->instance_, physicalDeviceRes.value(), this->device_);
+    auto allocRes = this->CreateAllocator(this->instance_,
+                                          this->physicalDevice_, this->device_);
     if (!allocRes.has_value()) {
         return std::unexpected(allocRes.error());
     }
 
     auto surfaceRes =
-        this->CreateSurface(window, surfaceFactory, this->instance_);
+        this->CreateSurface(this->window_, surfaceFactory, this->instance_);
     if (!surfaceRes.has_value()) {
         return std::unexpected(surfaceRes.error());
     }
 
     auto swapchainRes = this->CreateSwapchain(
-        window, this->surface_, this->device_, physicalDeviceRes.value());
+        this->window_, this->surface_, this->device_, this->physicalDevice_);
     if (!swapchainRes.has_value()) {
         return std::unexpected(swapchainRes.error());
     }
 
-    auto depthAttachRes =
-        this->DepthAttachment(window, this->device_, physicalDeviceRes.value());
+    auto depthAttachRes = this->DepthAttachment(
+        this->device_, this->physicalDevice_, this->swapchainExtent_);
     if (!depthAttachRes.has_value()) {
         return std::unexpected(depthAttachRes.error());
     }
@@ -130,6 +151,10 @@ std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
 
     this->instance_ = std::move(result.value());
 
+    return {};
+}
+
+std::expected<void, Vulkan::Error> Vulkan::SetupDebugMessenger() {
 #ifndef NDEBUG
     vk::DebugUtilsMessengerCreateInfoEXT messengerCI{
         .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
@@ -146,8 +171,14 @@ std::expected<void, Vulkan::Error> Vulkan::CreateInstance(
         this->instance_.createDebugUtilsMessengerEXT(messengerCI)
             .value_or(nullptr);
 #endif
-
     return {};
+}
+
+Vulkan::~Vulkan() {
+    if constexpr (kHostOwnsResources) {
+        this->surface_.release();
+        this->instance_.release();
+    }
 }
 
 std::expected<vk::raii::PhysicalDevice, Vulkan::Error>
@@ -294,7 +325,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateAllocator(
 }
 
 std::expected<void, Vulkan::Error> Vulkan::CreateSurface(
-    const std::unique_ptr<GE::Platform::Window>& window,
+    const std::shared_ptr<GE::Platform::Window>& window,
     std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
     const vk::raii::Instance& instance) {
     auto res = surfaceFactory->CreateSurface(
@@ -311,9 +342,15 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSurface(
 }
 
 std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
-    const std::unique_ptr<GE::Platform::Window>& window,
+    const std::shared_ptr<GE::Platform::Window>& window,
     const vk::raii::SurfaceKHR& surface, const vk::raii::Device& device,
-    const vk::raii::PhysicalDevice& physicalDevice) {
+    const vk::raii::PhysicalDevice& physicalDevice,
+    std::optional<vk::raii::SwapchainKHR> oldSwapchain) {
+    auto waitRes = device.waitIdle();
+    if (!waitRes.has_value()) {
+        return std::unexpected(Vulkan::FailedWaitingDevice);
+    }
+
     auto surfaceCapsRes = physicalDevice.getSurfaceCapabilitiesKHR(surface);
     if (!surfaceCapsRes.has_value()) {
         return std::unexpected(Vulkan::FailedToGetSurfaceCaps);
@@ -367,6 +404,10 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
         .presentMode = vk::PresentModeKHR::eFifo,
     };
 
+    if (oldSwapchain.has_value()) {
+        swapchainCI.oldSwapchain = *oldSwapchain.value();
+    }
+
     auto swapchainRes = device.createSwapchainKHR(swapchainCI);
     if (!swapchainRes.has_value()) {
         return std::unexpected(Vulkan::Error::FailedSwapchainCreation);
@@ -406,31 +447,30 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSwapchain(
 }
 
 std::expected<void, Vulkan::Error> Vulkan::DepthAttachment(
-    const std::unique_ptr<GE::Platform::Window>& window,
     const vk::raii::Device& device,
-    const vk::raii::PhysicalDevice& physicalDevice) {
+    const vk::raii::PhysicalDevice& physicalDevice,
+    const vk::Extent2D& swapchainExtent) {
     std::vector<vk::Format> depthFormatList{
         vk::Format::eD32SfloatS8Uint,
         vk::Format::eD24UnormS8Uint,
     };
-    vk::Format depthFormat = vk::Format::eUndefined;
 
     for (auto format : depthFormatList) {
         auto formatProp = physicalDevice.getFormatProperties2(format);
         if (formatProp.formatProperties.optimalTilingFeatures &
             vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
-            depthFormat = format;
+            this->depthFormat_ = format;
             break;
         }
     }
 
     vk::ImageCreateInfo depthImageCI = {
         .imageType = vk::ImageType::e2D,
-        .format = depthFormat,
+        .format = this->depthFormat_,
         .extent =
             {
-                .width = window->width(),
-                .height = window->height(),
+                .width = swapchainExtent.width,
+                .height = swapchainExtent.height,
                 .depth = 1,
             },
         .mipLevels = 1,
@@ -454,7 +494,7 @@ std::expected<void, Vulkan::Error> Vulkan::DepthAttachment(
     vk::ImageViewCreateInfo depthViewCI = {
         .image = depthImageRes.value(),
         .viewType = vk::ImageViewType::e2D,
-        .format = depthFormat,
+        .format = this->depthFormat_,
         .subresourceRange =
             {
                 .aspectMask = vk::ImageAspectFlagBits::eDepth,
@@ -507,6 +547,23 @@ std::expected<void, Vulkan::Error> Vulkan::CreateShaderDataBuffers(
     return {};
 }
 
+std::expected<void, Vulkan::Error> Vulkan::CreateRenderCompleteSemaphores(
+    const vk::raii::Device& device,
+    const vk::SemaphoreCreateInfo& semaphoreCI) {
+    this->renderCompleteSemaphores_.clear();
+    this->renderCompleteSemaphores_.reserve(this->swapchainImages_.size());
+    for (uint32_t i = 0; i < this->swapchainImages_.size(); i++) {
+        auto semaphoreRes = device.createSemaphore(semaphoreCI);
+        if (!semaphoreRes.has_value()) {
+            return std::unexpected(Vulkan::FailedSemaphoreCreation);
+        }
+        this->renderCompleteSemaphores_.push_back(
+            std::move(semaphoreRes.value()));
+    }
+
+    return {};
+}
+
 std::expected<void, Vulkan::Error> Vulkan::CreateSyncronizationObjects(
     const vk::raii::Device& device) {
     vk::SemaphoreCreateInfo semaphoreCI = {};
@@ -528,15 +585,10 @@ std::expected<void, Vulkan::Error> Vulkan::CreateSyncronizationObjects(
         this->fences_[i] = std::move(fenceRes.value());
     }
 
-    this->renderCompleteSemaphores_.clear();
-    this->renderCompleteSemaphores_.reserve(this->swapchainImages_.size());
-    for (uint32_t i = 0; i < this->swapchainImages_.size(); i++) {
-        auto semaphoreRes = device.createSemaphore(semaphoreCI);
-        if (!semaphoreRes.has_value()) {
-            return std::unexpected(Vulkan::FailedSemaphoreCreation);
-        }
-        this->renderCompleteSemaphores_.push_back(
-            std::move(semaphoreRes.value()));
+    auto semaphoreRes =
+        this->CreateRenderCompleteSemaphores(device, semaphoreCI);
+    if (!semaphoreRes.has_value()) {
+        return std::unexpected(semaphoreRes.error());
     }
 
     return {};
@@ -681,6 +733,7 @@ std::expected<void, Vulkan::Error> Vulkan::CreateGraphicsPipeline(
                 .colorAttachmentCount = 1,
                 .pColorAttachmentFormats =
                     &this->swapchainSurfaceFormat_.format,
+                .depthAttachmentFormat = this->depthFormat_,
             },
         };
 
@@ -719,16 +772,19 @@ void Vulkan::RenderPass() {
         return;
     }
 
-    auto resetFenceRes =
-        this->device_.resetFences({this->fences_[this->frameIndex_]});
-    if (!resetFenceRes.has_value()) {
-        // TODO
-        return;
-    }
-
     auto nextImageRes = this->swapchain_.acquireNextImage(
         UINT64_MAX, this->imageAcquiredSemaphores_[this->frameIndex_]);
     if (!nextImageRes.has_value()) {
+        if (nextImageRes.result == vk::Result::eSuboptimalKHR ||
+            nextImageRes.result == vk::Result::eErrorOutOfDateKHR) {
+            this->Resize();
+        }
+        return;
+    }
+
+    auto resetFenceRes =
+        this->device_.resetFences({this->fences_[this->frameIndex_]});
+    if (!resetFenceRes.has_value()) {
         // TODO
         return;
     }
@@ -911,7 +967,52 @@ void Vulkan::RenderPass() {
         .pImageIndices = &nextImageRes.value,
     };
 
-    if (this->queue_.presentKHR(presentInfo) != vk::Result::eSuccess) {
+    auto presentRes = this->queue_.presentKHR(presentInfo);
+    if (presentRes == vk::Result::eSuboptimalKHR ||
+        presentRes == vk::Result::eErrorOutOfDateKHR) {
+        this->Resize();
+        return;
+    }
+
+    if (presentRes != vk::Result::eSuccess) {
+        // TODO
+        return;
+    }
+}
+
+void Vulkan::Resize() {
+    auto oldFormat = this->swapchainSurfaceFormat_;
+
+    auto swapchainRes = this->CreateSwapchain(
+        this->window_, this->surface_, this->device_, this->physicalDevice_,
+        std::make_optional<vk::raii::SwapchainKHR>(
+            std::move(this->swapchain_)));
+    if (!swapchainRes.has_value()) {
+        // TODO
+        return;
+    }
+
+    auto depthRes = this->DepthAttachment(this->device_, this->physicalDevice_,
+                                          this->swapchainExtent_);
+    if (!depthRes.has_value()) {
+        // TODO
+        return;
+    }
+
+    // TODO: Remove hard coded semaphoreCI
+    auto semaphoreRes = this->CreateRenderCompleteSemaphores(this->device_, {});
+    if (!semaphoreRes.has_value()) {
+        // TODO
+        return;
+    }
+
+    if (this->swapchainSurfaceFormat_.format == oldFormat.format &&
+        this->swapchainSurfaceFormat_.colorSpace == oldFormat.colorSpace) {
+        return;
+    }
+
+    auto pipelineRes = this->CreateGraphicsPipeline(this->device_);
+    if (!pipelineRes.has_value()) {
         // TODO
         return;
     }

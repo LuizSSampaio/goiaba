@@ -14,6 +14,9 @@ public:
     virtual ~SurfaceFactory() = default;
 
     virtual std::vector<const char*> RequiredInstanceExtensions() = 0;
+
+    virtual uint64_t InstanceHandle() { return 0; }
+
     virtual std::expected<std::unique_ptr<Surface>, Surface::Error>
     CreateSurface(Window& window, uint64_t instanceHandle) = 0;
 };

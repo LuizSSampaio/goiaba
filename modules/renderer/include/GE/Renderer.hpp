@@ -29,7 +29,7 @@ public:
 
 private:
     std::unique_ptr<IBackend> backend_;
-    std::unique_ptr<GE::Platform::Window> window_;
+    std::shared_ptr<GE::Platform::Window> window_;
 
     std::expected<void, Error> InitVulkan(
         std::unique_ptr<GE::Platform::SurfaceFactory> surfaceFactory);

@@ -59,6 +59,10 @@ std::expected<void, Renderer::Error> Renderer::InitVulkan(
 }
 
 void Renderer::Run() {
+    if (!this->backend_ || !this->window_) {
+        return;
+    }
+
     this->window_->PollEvents();
 
     this->backend_->RenderPass();

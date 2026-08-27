@@ -7,9 +7,14 @@ build:
     meson compile -C {{ builddir }}
 
 run:
-    ./{{ builddir }}/samples/{{ binName }}
+    ./{{ builddir }}/editor/{{ binName }}
+
+run-sample SAMPLE:
+    ./{{ builddir }}/samples/{{ SAMPLE }}
 
 brun: build run
+
+brun-sample SAMPLE: build (run-sample SAMPLE)
 
 setup:
     meson setup {{ builddir }} -Dbuildtype=debugoptimized
