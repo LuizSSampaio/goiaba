@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -46,6 +47,7 @@ public:
         FailedShaderModuleCreation,
         FailedPipelineLayoutCreation,
         FailedGraphicsPipelineCreation,
+        FailedWaitingDevice,
     };
 
     struct Extensions {
@@ -68,21 +70,26 @@ public:
     ~Vulkan() override;
 
     std::expected<void, Error> Init(
-        std::unique_ptr<GE::Platform::Window>& window,
+        std::shared_ptr<GE::Platform::Window>& window,
         std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
         const std::string& appName, const std::string& engineName,
         Extensions& extensions);
 
     void RenderPass() override;
 
+    void Resize() override;
+
 private:
     static constexpr uint32_t maxFramesInFlight = 2;
     uint32_t frameIndex_ = 0;
+
+    std::shared_ptr<GE::Platform::Window> window_;
 
     vk::raii::Context context_;
     vk::raii::Instance instance_ = nullptr;
     vk::raii::DebugUtilsMessengerEXT debugMessenger_ = nullptr;
     vk::raii::SurfaceKHR surface_ = nullptr;
+    vk::raii::PhysicalDevice physicalDevice_ = nullptr;
     vk::raii::Device device_ = nullptr;
     vk::raii::Queue queue_ = nullptr;
     vk::Extent2D swapchainExtent_;
@@ -93,6 +100,7 @@ private:
     vma::raii::Allocator alloc_ = nullptr;
     vma::raii::Image depthImage_ = nullptr;
     vk::raii::ImageView depthImageView_ = nullptr;
+    vk::Format depthFormat_ = vk::Format::eUndefined;
     std::array<ShaderDataBuffer, maxFramesInFlight> shaderDataBuffers_;
     vk::raii::CommandPool commandPool_ = nullptr;
     std::array<vk::raii::CommandBuffer, maxFramesInFlight> commandBuffers_ = {
@@ -129,22 +137,27 @@ private:
         const vk::raii::Device& device);
 
     std::expected<void, Error> CreateSurface(
-        const std::unique_ptr<GE::Platform::Window>& window,
+        const std::shared_ptr<GE::Platform::Window>& window,
         std::unique_ptr<GE::Platform::SurfaceFactory>& surfaceFactory,
         const vk::raii::Instance& instance);
 
     std::expected<void, Error> CreateSwapchain(
-        const std::unique_ptr<GE::Platform::Window>& window,
+        const std::shared_ptr<GE::Platform::Window>& window,
         const vk::raii::SurfaceKHR& surface, const vk::raii::Device& device,
-        const vk::raii::PhysicalDevice& physicalDevice);
+        const vk::raii::PhysicalDevice& physicalDevice,
+        std::optional<vk::raii::SwapchainKHR> oldSwapchain = std::nullopt);
 
     std::expected<void, Error> DepthAttachment(
-        const std::unique_ptr<GE::Platform::Window>& window,
         const vk::raii::Device& device,
-        const vk::raii::PhysicalDevice& physicalDevice);
+        const vk::raii::PhysicalDevice& physicalDevice,
+        const vk::Extent2D& swapchainExtent);
 
     std::expected<void, Error> CreateShaderDataBuffers(
         const vk::raii::Device& device);
+
+    std::expected<void, Error> CreateRenderCompleteSemaphores(
+        const vk::raii::Device& device,
+        const vk::SemaphoreCreateInfo& semaphoreCI);
 
     std::expected<void, Error> CreateSyncronizationObjects(
         const vk::raii::Device& device);
