@@ -1,6 +1,8 @@
 qt6 = import('qt6')
 qt6_dep = dependency('qt6', modules: ['Core', 'Gui', 'Widgets'])
 
+vulkan_headers_dep = dependency('VulkanHeaders')
+
 logger_dep = dependency('goiaba_logger')
 renderer_editor_dep = dependency('goiaba_renderer_editor')
 
@@ -16,6 +18,7 @@ executable(
     ] + moc_files,
     dependencies: [
         qt6_dep,
+        vulkan_headers_dep,
         logger_dep,
         renderer_editor_dep,
     ],
